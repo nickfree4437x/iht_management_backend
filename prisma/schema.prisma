@@ -1,0 +1,506 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/* ================= ENUMS ================= */
+
+enum UserRole {
+  ADMIN
+  AGENT
+  USER
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  REFUNDED
+}
+
+enum NotificationType {
+  info
+  warning
+  success
+}
+
+/* ================= USER ================= */
+
+model User {
+  id              String   @id @default(uuid())
+  username        String   @unique
+  email           String?  @unique
+  password        String
+
+  role            UserRole @default(USER)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  failedAttempts  Int      @default(0)
+  lockedUntil     DateTime?
+
+  lastLoginAt     DateTime?
+
+  resetToken      String?
+  resetExpiry     DateTime?
+
+  loginActivities LoginActivity[]
+  refreshTokens   RefreshToken[]
+  notifications   Notification[]
+
+  @@index([username])
+}
+
+/* ================= LOGIN ACTIVITY ================= */
+
+model LoginActivity {
+  id        String   @id @default(uuid())
+
+  userId    String
+  ip        String
+  device    String
+  status    String
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+/* ================= ACTIVITY LOG ================= */
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+
+  type        String
+  message     String
+
+  entityId    String?
+  entityType  String?
+
+  tourId      String?
+
+  performedBy String?
+
+  meta        Json?
+
+  createdAt   DateTime @default(now())
+
+  @@index([type])
+  @@index([entityId])
+  @@index([tourId])
+  @@index([createdAt])
+  @@index([tourId, createdAt])
+}
+
+/* ================= REFRESH TOKEN ================= */
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/* ================= NOTIFICATION ================= */
+
+model Notification {
+  id        String   @id @default(uuid())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  message   String
+  type      NotificationType @default(info)
+
+  isRead    Boolean  @default(false)
+
+  entityId   String?
+  entityType String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+/* ================= ADVISOR ================= */
+
+model Advisor {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String   @unique
+  photo     String?
+
+  createdAt DateTime @default(now())
+
+  tours     Tour[]
+
+  @@index([email])
+}
+
+/* ================= TOUR ================= */
+
+model Tour {
+  id                  String   @id @default(uuid())
+
+  guestName           String
+  pax                 Int
+  email               String
+  phone               String
+  country             String
+  tourName            String
+  arrivalCity         String
+
+  advisorId           String
+  advisor             Advisor  @relation(fields: [advisorId], references: [id])
+
+  driverId            String?
+  driver              Driver?  @relation(fields: [driverId], references: [id])
+
+  hotelId             String?
+  hotel               Hotel?   @relation(fields: [hotelId], references: [id])
+
+  startDate           DateTime
+  endDate             DateTime
+
+  totalCost           Decimal  @db.Decimal(10, 2)
+
+  advancePayment      Decimal? @db.Decimal(10, 2)
+  advancePaymentDate  DateTime?
+
+  transactionFee      Decimal? @db.Decimal(10, 2)
+
+  status              String   @default("reserved")
+
+  isDeleted           Boolean  @default(false)
+  deletedAt           DateTime?
+
+  createdAt           DateTime @default(now())
+
+  /* RELATIONS */
+  payments            Payment[]
+  guests              Guest[]
+  itineraries         Itinerary[]
+  transports          Transport[]
+  documents           Document[]
+  queries             Query[]
+  additionalCosts     AdditionalCost[]
+  activities          TourActivity[]
+  travelTickets       TravelTicket[]
+  otherDetails        TourOtherDetail?
+  clientAccount       ClientAccount?
+
+  @@index([advisorId])
+  @@index([driverId])
+  @@index([hotelId])
+  @@index([startDate])
+  @@index([status])
+}
+
+/* ================= PAYMENT ================= */
+
+model Payment {
+  id              String   @id @default(uuid())
+
+  tourId          String
+  tour            Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  paymentDate     DateTime?
+
+  amount          Decimal? @db.Decimal(10, 2)
+  transactionFee  Decimal? @db.Decimal(10, 2)
+
+  paymentMode     String?
+  status          PaymentStatus @default(PENDING)
+
+  comment         String?   @default("N/A")
+
+  refundAmount    Decimal?
+  refundDate      DateTime?
+  refundReason    String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tourId])
+  @@index([status])
+}
+
+/* ================= HOTEL ================= */
+
+model Hotel {
+  id        String   @id @default(uuid())
+
+  name      String
+  city      String
+  country   String
+  address   String
+
+  phone     String?
+  email     String?
+
+  rating    Float?
+  notes     String?
+
+  tours     Tour[]
+
+  createdAt DateTime @default(now())
+}
+
+/* ================= DRIVER ================= */
+
+model Driver {
+  id            String   @id @default(uuid())
+
+  name          String
+  phone         String
+  vehicle       String
+  vehicleNumber String   @unique
+
+  notes         String?
+
+  createdAt     DateTime @default(now())
+
+  transports    Transport[]
+  tours         Tour[]
+
+  @@index([phone])
+}
+
+/* ================= TRANSPORT ================= */
+
+model Transport {
+  id        String   @id @default(uuid())
+
+  date      DateTime
+  type      String
+
+  from      String
+  to        String
+
+  details   String?
+
+  driverId  String
+  driver    Driver   @relation(fields: [driverId], references: [id])
+
+  tourId    String
+  tour      Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([tourId])
+  @@index([driverId])
+}
+
+/* ================= DOCUMENT ================= */
+
+model Document {
+  id           String   @id @default(uuid())
+
+  fileName     String
+  filePath     String
+  publicId     String?
+
+  fileSize     Int?
+  fileType     String?
+
+  documentType String
+
+  tourId       String
+  tour         Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  uploadedAt   DateTime @default(now())
+
+  @@index([tourId])
+}
+
+/* ================= GUEST ================= */
+
+model Guest {
+  id             String   @id @default(uuid())
+  name           String
+  phone          String
+  email          String
+  country        String
+  arrivalDetails String?
+
+  tourId         String
+  tour           Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+
+  @@index([tourId])
+}
+
+/* ================= ITINERARY ================= */
+
+model Itinerary {
+  id          String   @id @default(uuid())
+
+  date        DateTime?
+  destination String?
+  city        String?
+
+  hotel       String?
+  roomType    String?
+  status      String?
+
+  tourId      String
+  tour        Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([tourId])
+  @@index([date])
+}
+
+/* ================= ACTIVITY ================= */
+
+model Activity {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  image        String?
+
+  price        Decimal? @db.Decimal(10, 2)
+  duration     String?
+  category     String?
+  availability Boolean  @default(true)
+
+  createdAt    DateTime @default(now())
+
+  tours        TourActivity[]
+}
+
+/* ================= TOUR ACTIVITY ================= */
+
+model TourActivity {
+  id         String   @id @default(uuid())
+
+  tourId     String
+  activityId String
+
+  tour       Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  activity   Activity @relation(fields: [activityId], references: [id])
+
+  @@index([tourId])
+}
+
+/* ================= OTHER DETAILS ================= */
+
+model TourOtherDetail {
+  id              String   @id @default(uuid())
+
+  tourId          String   @unique
+  tour            Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  room            String?  @default("N/A")
+  plan            String?  @default("N/A")
+  safari          String?  @default("N/A")
+  boating         String?  @default("N/A")
+  specialActivity String?  @default("N/A")
+
+  createdAt       DateTime @default(now())
+}
+
+/* ================= QUERY ================= */
+
+enum QueryStatus {
+  PENDING
+  ANSWERED
+  COMPLETED
+}
+
+model Query {
+  id            String   @id @default(uuid())
+
+  message       String
+  answer        String?
+
+  attachmentUrl String?
+
+  status        QueryStatus @default(PENDING)
+
+  tourId        String
+  tour          Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tourId])
+}
+
+/* ================= TRAVEL TICKET ================= */
+
+model TravelTicket {
+  id        String   @id @default(uuid())
+
+  person    String
+  type      String
+  date      DateTime
+
+  from      String
+  to        String
+
+  image     String?
+
+  tourId    String
+  tour      Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tourId])
+}
+
+/* ================= ADDITIONAL COST ================= */
+
+model AdditionalCost {
+  id        String   @id @default(uuid())
+
+  amount    Decimal  @db.Decimal(10, 2)
+  status    String
+  comment   String?
+
+  tourId    String
+  tour      Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([tourId])
+}
+
+/* ================= CLIENT ACCOUNT ================= */
+
+model ClientAccount {
+  id        String   @id @default(uuid())
+
+  email     String   @unique
+  password  String
+
+  tourId    String   @unique
+  tour      Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+
+  createdAt DateTime @default(now())
+}
