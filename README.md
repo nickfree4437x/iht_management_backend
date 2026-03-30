@@ -1,4 +1,4 @@
-# 🚀 Travel Agency Backend API
+# Travel Agency Backend API
 
 A scalable and production-ready backend for managing tours, bookings, payments, and client dashboards.
 
