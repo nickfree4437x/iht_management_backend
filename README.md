@@ -62,14 +62,14 @@ npm run dev
 ```
 
 Server will start at:
-👉 http://localhost:5000
+👉 https://iht-management-backend.onrender.com
 
 ---
 
 ## 📡 API Base URL
 
 ```
-http://localhost:5000/api
+https://iht-management-backend.onrender.com/api
 ```
 
 ---
