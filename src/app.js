@@ -17,7 +17,7 @@ const app = express();
 ------------------------------*/
 app.use(
   cors({
-    origin: "https://iht-management-frontend.vercel.app/",
+    origin: "https://iht-management-frontend.vercel.app",
     credentials: true,
   })
 );
