@@ -7,27 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/* ================= ENUMS ================= */
-
-enum UserRole {
-  ADMIN
-  AGENT
-  USER
-}
-
-enum PaymentStatus {
-  PENDING
-  PARTIAL
-  PAID
-  REFUNDED
-}
-
-enum NotificationType {
-  info
-  warning
-  success
-}
-
 /* ================= USER ================= */
 
 model User {
@@ -36,7 +15,7 @@ model User {
   email           String?  @unique
   password        String
 
-  role            UserRole @default(USER)
+  role            String   @default("user") // ✅ enum removed
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -125,7 +104,7 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   message   String
-  type      NotificationType @default(info)
+  type      String   @default("info") // ✅ enum removed
 
   isRead    Boolean  @default(false)
 
@@ -195,7 +174,6 @@ model Tour {
 
   createdAt           DateTime @default(now())
 
-  /* RELATIONS */
   payments            Payment[]
   guests              Guest[]
   itineraries         Itinerary[]
@@ -229,7 +207,7 @@ model Payment {
   transactionFee  Decimal? @db.Decimal(10, 2)
 
   paymentMode     String?
-  status          PaymentStatus @default(PENDING)
+  status          String   @default("pending") // ✅ enum removed
 
   comment         String?   @default("N/A")
 
@@ -423,12 +401,6 @@ model TourOtherDetail {
 
 /* ================= QUERY ================= */
 
-enum QueryStatus {
-  PENDING
-  ANSWERED
-  COMPLETED
-}
-
 model Query {
   id            String   @id @default(uuid())
 
@@ -437,7 +409,7 @@ model Query {
 
   attachmentUrl String?
 
-  status        QueryStatus @default(PENDING)
+  status        String   @default("pending") // ✅ enum removed
 
   tourId        String
   tour          Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)

@@ -36,7 +36,7 @@ export const sendClientLoginEmail = async (email, password, tourId) => {
 
                 <!-- HEADER -->
                 <tr>
-                  <td style="background:#A38664;padding:25px;text-align:center;">
+                  <td style="background:#CBB299;padding:25px;text-align:center;">
         
                     <h2 style="color:#fff;margin:0;font-weight:600;">
                       India Heritage Travel
@@ -74,7 +74,7 @@ export const sendClientLoginEmail = async (email, password, tourId) => {
                     <!-- CTA -->
                     <div style="text-align:center;margin:25px 0;">
                       <a href="${loginUrl}"
-                        style="display:inline-block;padding:12px 28px;background:#A38664;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">
+                        style="display:inline-block;padding:12px 28px;background:#CBB299;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">
                         Login Now
                       </a>
                     </div>

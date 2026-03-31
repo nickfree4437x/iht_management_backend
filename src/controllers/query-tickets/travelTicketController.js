@@ -1,5 +1,6 @@
 import prisma from "../../config/prisma.js";
 import cloudinary from "../../config/cloudinary.js";
+import { createActivityAndEmit } from "../../utils/activityHelper.js"; // 🔥 ADD
 
 /* ---------------- HELPER ---------------- */
 const isValidDate = (date) => {
@@ -12,19 +13,16 @@ export const createTicket = async (req, res) => {
 
     const { person, type, date, from, to, tourId } = req.body;
 
-    // ✅ REQUIRED VALIDATION
     if (!person || !type || !from || !to || !tourId) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // ✅ DATE VALIDATION
     if (!isValidDate(date)) {
       return res.status(400).json({ error: "Valid date is required" });
     }
 
     let image = null;
 
-    // ✅ IMAGE UPLOAD
     if (req.file) {
       const uploaded = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
@@ -44,12 +42,20 @@ export const createTicket = async (req, res) => {
       data: {
         person,
         type,
-        date: new Date(date), // ✅ SAFE NOW
+        date: new Date(date),
         from,
         to,
         tourId,
         image
       }
+    });
+
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "ticket",
+      message: `${type} ticket added for ${person}`,
+      tourId,
+      performedBy: "System",
     });
 
     res.status(201).json(ticket);
@@ -92,12 +98,10 @@ export const updateTicket = async (req, res) => {
     const { id } = req.params;
     const { person, type, date, from, to } = req.body;
 
-    // ✅ REQUIRED VALIDATION
     if (!person || !type || !from || !to) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // ✅ DATE VALIDATION
     if (!isValidDate(date)) {
       return res.status(400).json({ error: "Valid date is required" });
     }
@@ -105,12 +109,11 @@ export const updateTicket = async (req, res) => {
     let data = {
       person,
       type,
-      date: new Date(date), // ✅ SAFE
+      date: new Date(date),
       from,
       to
     };
 
-    // ✅ IMAGE UPLOAD
     if (req.file) {
       const uploaded = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
@@ -126,9 +129,20 @@ export const updateTicket = async (req, res) => {
       data.image = uploaded.secure_url;
     }
 
+    const existing = await prisma.travelTicket.findUnique({
+      where: { id }
+    });
+
     const updatedTicket = await prisma.travelTicket.update({
       where: { id },
       data
+    });
+
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "ticket",
+      message: `Ticket updated for ${person}`,
+      tourId: existing.tourId,
     });
 
     res.json(updatedTicket);
@@ -148,8 +162,19 @@ export const deleteTicket = async (req, res) => {
 
     const { id } = req.params;
 
+    const existing = await prisma.travelTicket.findUnique({
+      where: { id }
+    });
+
     await prisma.travelTicket.delete({
       where: { id }
+    });
+
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "ticket",
+      message: "Ticket deleted",
+      tourId: existing.tourId,
     });
 
     res.json({

@@ -1,7 +1,8 @@
 import prisma from "../../config/prisma.js";
 
 // =========================
-// 🔥 CLIENT RECENT ACTIVITIES
+// 🔥 CLIENT RECENT ACTIVITIES (UNCHANGED ✅)
+// =========================
 export const getClientActivities = async (req, res, next) => {
   try {
     const { tourId } = req.params;
@@ -16,7 +17,9 @@ export const getClientActivities = async (req, res, next) => {
 
     const activities = await prisma.activityLog.findMany({
       where: { tourId },
-      orderBy: { createdAt: "desc" },
+      orderBy: {
+        createdAt: "desc",
+      },
       take: Number(limit),
     });
 
@@ -34,13 +37,14 @@ export const getClientActivities = async (req, res, next) => {
     });
 
   } catch (error) {
-    console.error(error);
+    console.error("❌ CLIENT ACTIVITIES ERROR:", error);
     next(error);
   }
 };
 
 // =========================
-// 🔥 CLIENT DASHBOARD ANALYTICS (FINAL FIX)
+// 🔥 CLIENT DASHBOARD ANALYTICS (UPDATED REAL ✅)
+// =========================
 export const getClientDashboardAnalytics = async (req, res, next) => {
   try {
     const { tourId } = req.params;
@@ -105,48 +109,44 @@ export const getClientDashboardAnalytics = async (req, res, next) => {
       : 0;
 
     // =========================
-    // 🔥 ACTIVITY SOURCE (CORRECT)
+    // 🔥 ACTIVITY COUNT (REAL SOURCE)
     // =========================
-    const tourActivities = await prisma.tourActivity.findMany({
+    const activityLogs = await prisma.activityLog.findMany({
       where: { tourId },
-      include: {
-        activity: true,
-      },
+      select: { createdAt: true },
     });
 
-    const totalActivities = tourActivities.length;
+    const totalActivities = activityLogs.length;
 
     const avgActivitiesPerDay = totalDays
       ? Number((totalActivities / totalDays).toFixed(1))
       : 0;
 
     // =========================
-    // 🔥 SMART DISTRIBUTION (NO DAY LINK)
+    // 🔥 REAL DATE-WISE GROUPING
     // =========================
-    const baseCount = totalDays
-      ? Math.floor(totalActivities / totalDays)
-      : 0;
+    const activityMap = {};
 
-    let remaining = totalDays
-      ? totalActivities % totalDays
-      : 0;
+    activityLogs.forEach((log) => {
+      const dateKey = new Date(log.createdAt).toLocaleDateString();
 
+      activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
+    });
+
+    // =========================
+    // 🔥 MAP WITH ITINERARY (0 fallback)
+    // =========================
     const activityTrend = itinerary.map((day) => {
-      let count = baseCount;
-
-      if (remaining > 0) {
-        count += 1;
-        remaining--;
-      }
+      const dateKey = new Date(day.date).toLocaleDateString();
 
       return {
-        date: new Date(day.date).toLocaleDateString(),
-        count,
+        date: dateKey,
+        count: activityMap[dateKey] || 0,
       };
     });
 
     // =========================
-    // 🔥 BUSIEST DAY
+    // 🔥 BUSIEST DAY (REAL)
     // =========================
     let busiestDay = null;
 
@@ -157,7 +157,7 @@ export const getClientDashboardAnalytics = async (req, res, next) => {
     }
 
     // =========================
-    // ✅ TIMELINE
+    // ✅ TIMELINE (UNCHANGED)
     // =========================
     const now = new Date();
 

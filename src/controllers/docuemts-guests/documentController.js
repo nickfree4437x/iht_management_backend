@@ -2,6 +2,7 @@ import prisma from "../../config/prisma.js";
 import cloudinary from "../../config/cloudinary.js";
 import streamifier from "streamifier";
 import axios from "axios";
+import { createActivityAndEmit } from "../../utils/activityHelper.js"; // 🔥 ADD
 
 // =========================
 // ✅ ALLOWED FILE TYPES
@@ -18,9 +19,7 @@ const allowedTypes = [
 // ✅ SAFE RESOURCE TYPE
 // =========================
 const getResourceType = (mime) => {
-  if (!mime || typeof mime !== "string") {
-    return "raw";
-  }
+  if (!mime || typeof mime !== "string") return "raw";
   return mime.startsWith("image/") ? "image" : "raw";
 };
 
@@ -30,10 +29,7 @@ const getResourceType = (mime) => {
 const uploadToCloudinary = (fileBuffer, folder, resourceType) => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: resourceType,
-      },
+      { folder, resource_type: resourceType },
       (error, result) => {
         if (result) resolve(result);
         else reject(error);
@@ -85,6 +81,13 @@ export const uploadDocument = async (req, res, next) => {
       },
     });
 
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "document",
+      message: `${documentType || "Document"} uploaded`,
+      tourId,
+    });
+
     res.status(201).json({
       success: true,
       document,
@@ -96,7 +99,7 @@ export const uploadDocument = async (req, res, next) => {
 };
 
 // =========================
-// 📥 GET DOCUMENTS BY TOUR
+// 📥 GET DOCUMENTS BY TOUR (UNCHANGED)
 // =========================
 export const getDocumentsByTour = async (req, res, next) => {
   try {
@@ -111,7 +114,7 @@ export const getDocumentsByTour = async (req, res, next) => {
 
     const documents = await prisma.document.findMany({
       where: {
-        tourId: String(tourId), // 🔥 force string match
+        tourId: String(tourId),
       },
       orderBy: { uploadedAt: "desc" },
     });
@@ -129,7 +132,7 @@ export const getDocumentsByTour = async (req, res, next) => {
 };
 
 // =========================
-// ⬇ DOWNLOAD DOCUMENT
+// ⬇ DOWNLOAD DOCUMENT (UNCHANGED)
 // =========================
 export const downloadDocument = async (req, res, next) => {
   try {
@@ -198,7 +201,6 @@ export const replaceDocument = async (req, res, next) => {
       });
     }
 
-    // ✅ OLD FILE DELETE (safe)
     const oldResourceType = getResourceType(existingDocument.fileType);
 
     if (existingDocument.publicId) {
@@ -207,7 +209,6 @@ export const replaceDocument = async (req, res, next) => {
       });
     }
 
-    // ✅ NEW FILE UPLOAD
     const newResourceType = getResourceType(req.file.mimetype);
 
     const result = await uploadToCloudinary(
@@ -225,6 +226,13 @@ export const replaceDocument = async (req, res, next) => {
         fileSize: req.file.size,
         fileType: req.file.mimetype,
       },
+    });
+
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "document",
+      message: "Document replaced",
+      tourId: existingDocument.tourId,
     });
 
     res.json({
@@ -266,6 +274,13 @@ export const deleteDocument = async (req, res, next) => {
 
     await prisma.document.delete({
       where: { id },
+    });
+
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "document",
+      message: "Document deleted",
+      tourId: document.tourId,
     });
 
     res.json({

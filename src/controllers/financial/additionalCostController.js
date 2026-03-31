@@ -1,8 +1,8 @@
 import prisma from "../../config/prisma.js";
+import { createActivityAndEmit } from "../../utils/activityHelper.js"; // 🔥 ADD
 
 
 export const addAdditionalCost = async (req, res) => {
-
   try {
 
     const { tourId, amount, status, comment } = req.body;
@@ -14,6 +14,13 @@ export const addAdditionalCost = async (req, res) => {
         status,
         comment,
       },
+    });
+
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "cost",
+      message: `Additional cost added ₹${amount}`,
+      tourId,
     });
 
     res.status(201).json({
@@ -31,12 +38,10 @@ export const addAdditionalCost = async (req, res) => {
     });
 
   }
-
 };
 
 
 export const getAdditionalCosts = async (req, res) => {
-
   try {
 
     const { tourId } = req.params;
@@ -61,16 +66,18 @@ export const getAdditionalCosts = async (req, res) => {
     });
 
   }
-
 };
 
 
 export const updateAdditionalCost = async (req, res) => {
-
   try {
 
     const { id } = req.params;
     const { amount, status, comment } = req.body;
+
+    const existing = await prisma.additionalCost.findUnique({
+      where: { id }
+    });
 
     const updated = await prisma.additionalCost.update({
       where: { id },
@@ -79,6 +86,13 @@ export const updateAdditionalCost = async (req, res) => {
         status,
         comment,
       },
+    });
+
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "cost",
+      message: "Additional cost updated",
+      tourId: existing.tourId,
     });
 
     res.json({
@@ -96,18 +110,27 @@ export const updateAdditionalCost = async (req, res) => {
     });
 
   }
-
 };
 
 
 export const deleteAdditionalCost = async (req, res) => {
-
   try {
 
     const { id } = req.params;
 
+    const existing = await prisma.additionalCost.findUnique({
+      where: { id }
+    });
+
     await prisma.additionalCost.delete({
       where: { id },
+    });
+
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "cost",
+      message: "Additional cost deleted",
+      tourId: existing.tourId,
     });
 
     res.json({
@@ -125,5 +148,4 @@ export const deleteAdditionalCost = async (req, res) => {
     });
 
   }
-
 };

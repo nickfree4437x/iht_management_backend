@@ -14,6 +14,18 @@ export const initSocket = (server) => {
   io.on("connection", (socket) => {
     console.log("🔌 User connected:", socket.id);
 
+    // 🔥 JOIN TOUR ROOM
+    socket.on("join-tour", (tourId) => {
+      socket.join(tourId);
+      console.log(`✅ Socket ${socket.id} joined tour: ${tourId}`);
+    });
+
+    // 🔥 LEAVE TOUR ROOM (optional)
+    socket.on("leave-tour", (tourId) => {
+      socket.leave(tourId);
+      console.log(`🚪 Socket ${socket.id} left tour: ${tourId}`);
+    });
+
     socket.on("disconnect", () => {
       console.log("❌ User disconnected:", socket.id);
     });

@@ -32,7 +32,7 @@ export const sendClientResetEmail = async (email, resetLink) => {
 
                 <!-- HEADER -->
                 <tr>
-                  <td style="background:#A38664;padding:20px;text-align:center;">
+                  <td style="background:#CBB299;padding:20px;text-align:center;">
                     <h2 style="color:#ffffff;margin:0;">India Heritage Travel</h2>
                   </td>
                 </tr>
@@ -56,7 +56,7 @@ export const sendClientResetEmail = async (email, resetLink) => {
                         style="
                           display:inline-block;
                           padding:14px 28px;
-                          background:#A38664;
+                          background:#CBB299;
                           color:#fff;
                           text-decoration:none;
                           border-radius:8px;

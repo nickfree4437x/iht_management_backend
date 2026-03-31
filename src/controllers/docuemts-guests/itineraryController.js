@@ -1,7 +1,8 @@
 import prisma from "../../config/prisma.js";
+import { createActivityAndEmit } from "../../utils/activityHelper.js"; // 🔥 ADD
 
 
-// GET itinerary by tour (SAFE UPGRADE)
+// GET itinerary by tour (UNCHANGED)
 export const getItinerary = async (req, res) => {
   try {
 
@@ -14,17 +15,9 @@ export const getItinerary = async (req, res) => {
     }
 
     const itinerary = await prisma.itinerary.findMany({
-      where: {
-        tourId
-      },
-      orderBy: {
-        date: "asc"
-      }
+      where: { tourId },
+      orderBy: { date: "asc" }
     });
-
-    // =========================
-    // ✅ NEW: STATS (NON-BREAKING)
-    // =========================
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -38,11 +31,8 @@ export const getItinerary = async (req, res) => {
       const itemDate = new Date(item.date);
       itemDate.setHours(0, 0, 0, 0);
 
-      if (itemDate < today) {
-        completedDays++;
-      } else {
-        upcomingDays++;
-      }
+      if (itemDate < today) completedDays++;
+      else upcomingDays++;
     });
 
     const totalDays = itinerary.length;
@@ -55,14 +45,10 @@ export const getItinerary = async (req, res) => {
     const startDate = itinerary[0]?.date || null;
     const endDate = itinerary[itinerary.length - 1]?.date || null;
 
-    // =========================
-    // ✅ RESPONSE (SAFE FORMAT)
-    // =========================
-
     res.json({
-      success: true,              // ✅ added but safe
-      data: itinerary,            // ✅ OLD FORMAT (important)
-      itinerary,                  // ✅ NEW FORMAT
+      success: true,
+      data: itinerary,
+      itinerary,
       stats: {
         totalDays,
         completedDays,
@@ -85,10 +71,8 @@ export const getItinerary = async (req, res) => {
 };
 
 
-
-// CREATE itinerary row (UNCHANGED)
+// CREATE itinerary row
 export const createItinerary = async (req, res) => {
-
   try {
 
     const {
@@ -108,21 +92,22 @@ export const createItinerary = async (req, res) => {
     }
 
     const itinerary = await prisma.itinerary.create({
-
       data: {
-
         date: date ? new Date(date) : null,
-
         destination: destination || null,
         city: city || null,
         hotel: hotel || null,
         roomType: roomType || null,
         status: status || null,
-
         tourId
-
       }
+    });
 
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "itinerary",
+      message: `Itinerary added${destination ? ` - ${destination}` : ""}`,
+      tourId,
     });
 
     res.status(201).json(itinerary);
@@ -136,14 +121,11 @@ export const createItinerary = async (req, res) => {
     });
 
   }
-
 };
 
 
-
-// UPDATE itinerary row (UNCHANGED)
+// UPDATE itinerary row
 export const updateItinerary = async (req, res) => {
-
   try {
 
     const { id } = req.params;
@@ -153,6 +135,10 @@ export const updateItinerary = async (req, res) => {
         message: "id is required"
       });
     }
+
+    const existing = await prisma.itinerary.findUnique({
+      where: { id }
+    });
 
     const {
       date,
@@ -164,22 +150,22 @@ export const updateItinerary = async (req, res) => {
     } = req.body;
 
     const itinerary = await prisma.itinerary.update({
-
-      where: {
-        id
-      },
-
+      where: { id },
       data: {
-
         ...(date !== undefined && { date: date ? new Date(date) : null }),
         ...(destination !== undefined && { destination }),
         ...(city !== undefined && { city }),
         ...(hotel !== undefined && { hotel }),
         ...(roomType !== undefined && { roomType }),
         ...(status !== undefined && { status })
-
       }
+    });
 
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "itinerary",
+      message: "Itinerary updated",
+      tourId: existing.tourId,
     });
 
     res.json(itinerary);
@@ -193,14 +179,11 @@ export const updateItinerary = async (req, res) => {
     });
 
   }
-
 };
 
 
-
-// DELETE itinerary row (UNCHANGED)
+// DELETE itinerary row
 export const deleteItinerary = async (req, res) => {
-
   try {
 
     const { id } = req.params;
@@ -211,10 +194,19 @@ export const deleteItinerary = async (req, res) => {
       });
     }
 
+    const existing = await prisma.itinerary.findUnique({
+      where: { id }
+    });
+
     await prisma.itinerary.delete({
-      where: {
-        id
-      }
+      where: { id }
+    });
+
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "itinerary",
+      message: "Itinerary deleted",
+      tourId: existing.tourId,
     });
 
     res.json({
@@ -230,5 +222,4 @@ export const deleteItinerary = async (req, res) => {
     });
 
   }
-
 };

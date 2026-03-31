@@ -1,4 +1,5 @@
 import prisma from "../../config/prisma.js";
+import { createActivityAndEmit } from "../../utils/activityHelper.js"; // 🔥 ADD
 
 
 // CREATE QUERY (Team)
@@ -21,6 +22,13 @@ export const createQuery = async (req, res) => {
       }
     });
 
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "query",
+      message: "New query raised",
+      tourId,
+    });
+
     res.status(201).json(query);
 
   } catch (error) {
@@ -35,8 +43,7 @@ export const createQuery = async (req, res) => {
 };
 
 
-
-// GET QUERIES BY TOUR
+// GET QUERIES BY TOUR (UNCHANGED)
 export const getQueriesByTour = async (req, res) => {
   try {
 
@@ -63,7 +70,6 @@ export const getQueriesByTour = async (req, res) => {
 };
 
 
-
 // CLIENT ANSWER QUERY
 export const answerQuery = async (req, res) => {
   try {
@@ -77,12 +83,23 @@ export const answerQuery = async (req, res) => {
       });
     }
 
+    const existing = await prisma.query.findUnique({
+      where: { id }
+    });
+
     const updated = await prisma.query.update({
       where: { id },
       data: {
         answer,
         status: "ANSWERED"
       }
+    });
+
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "query",
+      message: "Query answered",
+      tourId: existing.tourId,
     });
 
     res.json(updated);
@@ -99,18 +116,28 @@ export const answerQuery = async (req, res) => {
 };
 
 
-
 // MARK QUERY COMPLETED (Team)
 export const completeQuery = async (req, res) => {
   try {
 
     const { id } = req.params;
 
+    const existing = await prisma.query.findUnique({
+      where: { id }
+    });
+
     const updated = await prisma.query.update({
       where: { id },
       data: {
         status: "COMPLETED"
       }
+    });
+
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "query",
+      message: "Query marked as completed",
+      tourId: existing.tourId,
     });
 
     res.json(updated);
@@ -127,7 +154,6 @@ export const completeQuery = async (req, res) => {
 };
 
 
-
 // UPDATE QUERY (Team edit question)
 export const updateQuery = async (req, res) => {
   try {
@@ -141,9 +167,20 @@ export const updateQuery = async (req, res) => {
       });
     }
 
+    const existing = await prisma.query.findUnique({
+      where: { id }
+    });
+
     const updated = await prisma.query.update({
       where: { id },
       data: { message }
+    });
+
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "query",
+      message: "Query updated",
+      tourId: existing.tourId,
     });
 
     res.json(updated);
@@ -160,15 +197,25 @@ export const updateQuery = async (req, res) => {
 };
 
 
-
 // DELETE QUERY
 export const deleteQuery = async (req, res) => {
   try {
 
     const { id } = req.params;
 
+    const existing = await prisma.query.findUnique({
+      where: { id }
+    });
+
     await prisma.query.delete({
       where: { id }
+    });
+
+    // 🔥 ACTIVITY
+    await createActivityAndEmit({
+      type: "query",
+      message: "Query deleted",
+      tourId: existing.tourId,
     });
 
     res.json({

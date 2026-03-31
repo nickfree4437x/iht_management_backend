@@ -1,27 +1,27 @@
 import prisma from "../../config/prisma.js";
 import { sendInvoiceEmail } from "../../utils/sendInvoiceEmail.js";
+import { createActivityAndEmit } from "../../utils/activityHelper.js";
 
 /* ------------------------------------------------------ */
 /* HELPER FUNCTIONS */
 /* ------------------------------------------------------ */
 
-// 🔥 FIXED: Only Card pe fee lagegi
-const calculateTransactionFee = (amount, paymentMode) => {
-  if (!amount) return 0;
-
-  if (paymentMode !== "Card") return 0;
-
-  return parseFloat((amount * 0.0350).toFixed(2));
+const toNumber = (val) => {
+  const num = Number(val);
+  return isNaN(num) ? 0 : num;
 };
 
-const calculateStatus = (tourCost, totalReceived, totalRefund) => {
-  const netReceived = totalReceived - totalRefund;
+const calculateTransactionFee = (amount, paymentMode) => {
+  const amt = toNumber(amount);
+  if (!amt) return 0;
+  if (paymentMode !== "Card") return 0;
+  return Number((amt * 0.035).toFixed(2));
+};
 
-  if (totalRefund > 0) return "REFUNDED";
-  if (netReceived === 0) return "PENDING";
+const calculateStatus = (tourCost, netReceived) => {
+  if (netReceived <= 0) return "PENDING";
   if (netReceived < tourCost) return "PARTIAL";
   if (netReceived >= tourCost) return "PAID";
-
   return "PENDING";
 };
 
@@ -62,29 +62,32 @@ export const getTourPayments = async (req, res, next) => {
       orderBy: { paymentDate: "desc" }
     });
 
+    // ✅ SAFE CALCULATIONS
     const totalReceived = payments.reduce(
-      (sum, p) => sum + (p.amount || 0),
+      (sum, p) => sum + toNumber(p.amount),
       0
     );
 
     const totalRefund = payments.reduce(
-      (sum, p) => sum + (p.refundAmount || 0),
+      (sum, p) => sum + toNumber(p.refundAmount),
       0
     );
 
     const totalFees = payments.reduce(
-      (sum, p) => sum + (p.transactionFee || 0),
+      (sum, p) => sum + toNumber(p.transactionFee),
       0
     );
 
-    const netReceived = totalReceived - totalRefund;
+    const netReceived = totalReceived - totalRefund - totalFees;
 
-    const pendingAmount = tour.totalCost - netReceived;
+    const pendingAmount = Math.max(
+      toNumber(tour.totalCost) - netReceived,
+      0
+    );
 
     const status = calculateStatus(
-      tour.totalCost,
-      totalReceived,
-      totalRefund
+      toNumber(tour.totalCost),
+      netReceived
     );
 
     const lastPaymentDate = payments.length
@@ -95,11 +98,11 @@ export const getTourPayments = async (req, res, next) => {
       success: true,
       tour,
       summary: {
-        totalCost: tour.totalCost || 0,
+        totalCost: toNumber(tour.totalCost),
         receivedAmount: totalReceived,
         refundedAmount: totalRefund,
         netReceived,
-        pendingAmount: pendingAmount < 0 ? 0 : pendingAmount,
+        pendingAmount,
         transactionFees: totalFees,
         status,
         lastPaymentDate
@@ -133,21 +136,15 @@ export const createPayment = async (req, res, next) => {
       });
     }
 
-    const tour = await prisma.tour.findUnique({
-      where: { id: tourId },
-      include: { payments: true }
-    });
+    const parsedAmount = toNumber(amount);
 
-    if (!tour) {
-      return res.status(404).json({
+    if (!parsedAmount) {
+      return res.status(400).json({
         success: false,
-        message: "Tour not found"
+        message: "Invalid amount"
       });
     }
 
-    const parsedAmount = parseFloat(amount || 0);
-
-    // 🔥 FIX: Mode based fee
     const finalMode = paymentMode || "N/A";
     const fee = calculateTransactionFee(parsedAmount, finalMode);
 
@@ -163,33 +160,46 @@ export const createPayment = async (req, res, next) => {
       }
     });
 
-    // 🔥 Always fetch fresh data
+    await createActivityAndEmit({
+      type: "payment",
+      message: `Payment of ₹${parsedAmount} received`,
+      tourId,
+      performedBy: "Client",
+    });
+
+    // 🔥 RECALCULATE AFTER INSERT
     const allPayments = await prisma.payment.findMany({
       where: { tourId },
       orderBy: { paymentDate: "desc" }
     });
 
     const totalReceived = allPayments.reduce(
-      (sum, p) => sum + (p.amount || 0),
+      (sum, p) => sum + toNumber(p.amount),
       0
     );
 
     const totalRefund = allPayments.reduce(
-      (sum, p) => sum + (p.refundAmount || 0),
+      (sum, p) => sum + toNumber(p.refundAmount),
       0
     );
 
-    const netReceived = totalReceived - totalRefund;
+    const totalFees = allPayments.reduce(
+      (sum, p) => sum + toNumber(p.transactionFee),
+      0
+    );
 
-    const totalAmount = tour.totalCost || 0;
-    const remainingAmount = totalAmount - netReceived;
+    const netReceived = totalReceived - totalRefund - totalFees;
 
-    const status =
-      remainingAmount <= 0
-        ? "PAID"
-        : netReceived > 0
-        ? "PARTIAL"
-        : "PENDING";
+    const totalAmount = toNumber(
+      (await prisma.tour.findUnique({
+        where: { id: tourId },
+        select: { totalCost: true }
+      }))?.totalCost
+    );
+
+    const remainingAmount = Math.max(totalAmount - netReceived, 0);
+
+    const status = calculateStatus(totalAmount, netReceived);
 
     const formattedPayments = allPayments.map(p => ({
       ...p,
@@ -201,15 +211,19 @@ export const createPayment = async (req, res, next) => {
     }));
 
     try {
-      await sendInvoiceEmail(tour.email, {
-        guestName: tour.guestName,
-        tourId,
-        totalAmount,
-        paidAmount: netReceived,
-        remainingAmount,
-        status,
-        payments: formattedPayments
-      });
+      const tour = await prisma.tour.findUnique({ where: { id: tourId } });
+
+      if (tour?.email) {
+        await sendInvoiceEmail(tour.email, {
+          guestName: tour.guestName,
+          tourId,
+          totalAmount,
+          paidAmount: netReceived,
+          remainingAmount,
+          status,
+          payments: formattedPayments
+        });
+      }
     } catch (emailError) {
       console.error("Invoice email failed:", emailError);
     }
@@ -251,9 +265,7 @@ export const updatePayment = async (req, res, next) => {
       });
     }
 
-    const parsedAmount = amount ? parseFloat(amount) : existing.amount;
-
-    // 🔥 FIX: Mode based fee
+    const parsedAmount = amount ? toNumber(amount) : existing.amount;
     const finalMode = paymentMode || existing.paymentMode;
     const fee = calculateTransactionFee(parsedAmount, finalMode);
 
@@ -268,6 +280,12 @@ export const updatePayment = async (req, res, next) => {
         paymentMode: finalMode,
         comment: comment || existing.comment
       }
+    });
+
+    await createActivityAndEmit({
+      type: "payment",
+      message: "Payment updated",
+      tourId: existing.tourId,
     });
 
     res.json({
@@ -308,7 +326,7 @@ export const refundPayment = async (req, res, next) => {
     }
 
     const refundAmount =
-      (payment.amount || 0) - (payment.transactionFee || 0);
+      toNumber(payment.amount) - toNumber(payment.transactionFee);
 
     const updated = await prisma.payment.update({
       where: { id },
@@ -318,6 +336,12 @@ export const refundPayment = async (req, res, next) => {
         refundReason: "Tour cancelled",
         status: "REFUNDED"
       }
+    });
+
+    await createActivityAndEmit({
+      type: "payment",
+      message: `Payment refunded ₹${refundAmount}`,
+      tourId: payment.tourId,
     });
 
     res.json({
@@ -353,6 +377,12 @@ export const deletePayment = async (req, res, next) => {
 
     await prisma.payment.delete({
       where: { id }
+    });
+
+    await createActivityAndEmit({
+      type: "payment",
+      message: "Payment deleted",
+      tourId: existing.tourId,
     });
 
     res.json({
