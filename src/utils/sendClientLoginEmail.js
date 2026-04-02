@@ -1,12 +1,6 @@
-import nodemailer from "nodemailer"
+import { Resend } from "resend";
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-})
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ===============================
 // 📩 LOGIN EMAIL + ADMIN ALERT
@@ -14,14 +8,13 @@ const transporter = nodemailer.createTransport({
 export const sendClientLoginEmail = async (email, password, tourId) => {
   try {
 
-    const loginUrl = `${process.env.CLIENT_URL}/client/login`
-    const logoUrl = `${process.env.CLIENT_URL}/logo/logo.png` // 🔥 LOGO PATH
+    const loginUrl = `${process.env.CLIENT_URL}/client/login`;
 
     // ===============================
     // 🟢 CLIENT EMAIL
     // ===============================
-    await transporter.sendMail({
-      from: `"India Heritage Travel" <${process.env.EMAIL_USER}>`,
+    await resend.emails.send({
+      from: "onboarding@resend.dev", // temp sender (later custom domain laga sakta hai)
       to: email,
       subject: "Your Login Credentials",
 
@@ -37,7 +30,6 @@ export const sendClientLoginEmail = async (email, password, tourId) => {
                 <!-- HEADER -->
                 <tr>
                   <td style="background:#CBB299;padding:25px;text-align:center;">
-        
                     <h2 style="color:#fff;margin:0;font-weight:600;">
                       India Heritage Travel
                     </h2>
@@ -104,15 +96,14 @@ export const sendClientLoginEmail = async (email, password, tourId) => {
 
       </div>
       `
-    })
+    });
 
     // ===============================
     // 🔥 ADMIN EMAIL
     // ===============================
-    await transporter.sendMail({
-      from: `"India Heritage Travel" <${process.env.EMAIL_USER}>`,
+    await resend.emails.send({
+      from: "onboarding@resend.dev",
       to: process.env.EMAIL_USER,
-
       subject: "New Client Account Created",
 
       html: `
@@ -142,10 +133,10 @@ export const sendClientLoginEmail = async (email, password, tourId) => {
 
       </div>
       `
-    })
+    });
 
   } catch (error) {
-    console.error("❌ Email error:", error)
-    throw new Error("Email sending failed")
+    console.error("❌ Email error:", error);
+    throw new Error("Email sending failed");
   }
-}
+};
