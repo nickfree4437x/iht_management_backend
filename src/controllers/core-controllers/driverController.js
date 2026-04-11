@@ -30,7 +30,39 @@ export const createDriver = async (req, res, next) => {
     });
 
   } catch (error) {
-    next(error);
+
+    // 🔥 HANDLE UNIQUE CONSTRAINT
+    if (error.code === "P2002") {
+      const field = error.meta?.target?.[0];
+
+      if (field === "phone") {
+        return res.status(400).json({
+          success: false,
+          field: "phone",
+          message: "Phone number already exists"
+        });
+      }
+
+      if (field === "vehicleNumber") {
+        return res.status(400).json({
+          success: false,
+          field: "vehicleNumber",
+          message: "Vehicle number already exists"
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate entry"
+      });
+    }
+
+    console.error("Create Driver Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    });
   }
 };
 
@@ -109,7 +141,6 @@ export const getDriverById = async (req, res, next) => {
 
     const totalTours = uniqueTours.length;
 
-    // 🔥 ✅ DATE-BASED LOGIC (MAIN FIX)
     const today = new Date();
 
     const normalize = (d) =>
@@ -214,11 +245,46 @@ export const updateDriver = async (req, res, next) => {
     });
 
   } catch (error) {
-    next(error);
+
+    // 🔥 HANDLE UNIQUE CONSTRAINT HERE ALSO
+    if (error.code === "P2002") {
+      const field = error.meta?.target?.[0];
+
+      if (field === "phone") {
+        return res.status(400).json({
+          success: false,
+          field: "phone",
+          message: "Phone number already exists"
+        });
+      }
+
+      if (field === "vehicleNumber") {
+        return res.status(400).json({
+          success: false,
+          field: "vehicleNumber",
+          message: "Vehicle number already exists"
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate entry"
+      });
+    }
+
+    console.error("Update Driver Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    });
   }
 };
 
 
+/* =========================
+   DELETE DRIVER
+========================= */
 /* =========================
    DELETE DRIVER
 ========================= */
@@ -248,7 +314,21 @@ export const deleteDriver = async (req, res, next) => {
     });
 
   } catch (error) {
-    next(error);
+
+    // 🔥 FOREIGN KEY ERROR (driver already assigned)
+    if (error.code === "P2003") {
+      return res.status(400).json({
+        success: false,
+        message: "Driver is assigned to a tour and cannot be deleted"
+      });
+    }
+
+    console.error("Delete Driver Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    });
   }
 };
 

@@ -181,6 +181,44 @@ export const getPreviousTours = async (req, res, next) => {
   }
 };
 
+/* ---------------- ONGOING TOURS ---------------- */
+
+export const getOngoingTours = async (req, res, next) => {
+  try {
+
+    const today = new Date();
+
+    const tours = await prisma.tour.findMany({
+      where: {
+        startDate: { lte: today },
+        endDate: { gte: today },
+        isDeleted: false
+      },
+      include: {
+        ...advisorWithCount,
+
+        // ✅ FIXED (FULL DATA)
+        itineraries: {
+          orderBy: { date: "asc" }
+        },
+
+        transports: {
+          select: { id: true }
+        },
+
+        payments: true
+      },
+      orderBy: { startDate: "asc" }
+    });
+
+    const enrichedTours = enrichTourStatus(tours);
+
+    res.json({ success: true, tours: enrichedTours });
+
+  } catch (error) {
+    next(error);
+  }
+};
 
 /* ---------------- MOVE TO TRASH ---------------- */
 
@@ -312,7 +350,23 @@ export const getTourById = async (req, res, next) => {
 
     const tour = await prisma.tour.findUnique({
       where: { id },
-      include: advisorWithCount
+      include: {
+        ...advisorWithCount,
+
+        itineraries: {
+          orderBy: { date: "asc" }
+        },
+
+        // ✅ NEW ADD (ONLY THIS PART)
+        transports: {
+          include: {
+            driver: true
+          },
+          orderBy: {
+            date: "asc"
+          }
+        }
+      }
     });
 
     res.json({
@@ -321,6 +375,77 @@ export const getTourById = async (req, res, next) => {
     });
 
   } catch (error) {
+    next(error);
+  }
+};
+
+export const updateTour = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const {
+      guestName,
+      phone,
+      email,
+      country,
+      arrivalCity
+    } = req.body;
+
+    // ✅ Check tour exists
+    const existingTour = await prisma.tour.findUnique({
+      where: { id }
+    });
+
+    if (!existingTour) {
+      return res.status(404).json({
+        success: false,
+        message: "Tour not found"
+      });
+    }
+
+    // ✅ SAFE DATA BUILD
+    const dataToUpdate = {};
+
+    if (guestName !== undefined) dataToUpdate.guestName = guestName || null;
+    if (phone !== undefined) dataToUpdate.phone = phone || null;
+    if (email !== undefined) dataToUpdate.email = email || null;
+    if (country !== undefined) dataToUpdate.country = country || null;
+    if (arrivalCity !== undefined) dataToUpdate.arrivalCity = arrivalCity || null;
+
+    // ✅ Prisma update with detailed error catch
+    let updatedTour;
+
+    try {
+      updatedTour = await prisma.tour.update({
+        where: { id },
+        data: dataToUpdate,
+        include: {
+          advisor: {
+            include: {
+              _count: {
+                select: { tours: true }
+              }
+            }
+          }
+        }
+      });
+    } catch (prismaError) {
+      console.error("🔥 PRISMA ERROR:", prismaError);
+
+      return res.status(500).json({
+        success: false,
+        message: prismaError.message,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Tour updated successfully",
+      tour: updatedTour
+    });
+
+  } catch (error) {
+    console.error("🔥 UPDATE TOUR ERROR:", error);
     next(error);
   }
 };

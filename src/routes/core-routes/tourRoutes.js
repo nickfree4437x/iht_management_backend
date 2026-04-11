@@ -9,7 +9,9 @@ import {
   restoreTour,
   deleteForever,
   getAdvisorTours,
-  getTourById
+  getTourById,
+  getOngoingTours,
+  updateTour // ✅ NEW IMPORT
 } from "../../controllers/core-controllers/tourController.js";
 
 import { withActivity } from "../../utils/withActivity.js";
@@ -30,16 +32,26 @@ router.post(
 
 /* ---------------- TOUR LISTS ---------------- */
 
-// 🔥 Already enriched (hasHotel, hasTransport, hasPayment)
 router.get("/upcoming", getUpcomingTours);
 router.get("/previous", getPreviousTours);
-
-// Trash list (no change)
+router.get("/ongoing", getOngoingTours);
 router.get("/trash", getTrashTours);
+
+/* ---------------- UPDATE TOUR (✅ NEW) ---------------- */
+
+// ✅ IMPORTANT: placed before /:id route
+router.put(
+  "/:id",
+  withActivity(updateTour, {
+    type: "tour_updated",
+    entityType: "tour",
+    getMessage: (req) =>
+      `Tour updated (ID: ${req.params.id})`,
+  })
+);
 
 /* ---------------- TRASH SYSTEM ---------------- */
 
-// Move to Trash
 router.patch(
   "/:id/trash",
   withActivity(moveToTrash, {
@@ -50,7 +62,6 @@ router.patch(
   })
 );
 
-// Restore Tour
 router.patch(
   "/:id/restore",
   withActivity(restoreTour, {
@@ -61,7 +72,6 @@ router.patch(
   })
 );
 
-// Delete Forever
 router.delete(
   "/:id/delete",
   withActivity(deleteForever, {
@@ -76,7 +86,7 @@ router.delete(
 
 router.get("/advisor/:id", getAdvisorTours);
 
-// 🔥 Single tour (no change needed)
+// 🔥 KEEP LAST (IMPORTANT)
 router.get("/:id", getTourById);
 
 export default router;
