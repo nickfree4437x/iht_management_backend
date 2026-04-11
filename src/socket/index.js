@@ -5,7 +5,10 @@ let io;
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: [
+        "http://localhost:5173",
+        "https://iht-management.vercel.app"
+      ],
       methods: ["GET", "POST"],
       credentials: true,
     },
