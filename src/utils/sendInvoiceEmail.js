@@ -49,7 +49,7 @@ export const sendInvoiceEmail = async (email, data) => {
 
                 <!-- HEADER -->
                 <tr>
-                  <td style="background:#CBB299;padding:25px;text-align:center;">
+                  <td style="background:#C2A985;padding:25px;text-align:center;">
                     <h2 style="color:#fff;margin:0;">India Heritage Travel</h2>
                     <p style="color:#f3e6c8;font-size:13px;margin-top:5px;">
                       Payment Acknowledgement

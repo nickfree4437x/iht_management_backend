@@ -123,21 +123,21 @@ export const getClientDashboardAnalytics = async (req, res, next) => {
       : 0;
 
     // =========================
-    // 🔥 REAL DATE-WISE GROUPING
+    // 🔥 REAL DATE-WISE GROUPING (FIXED ✅)
     // =========================
     const activityMap = {};
 
     activityLogs.forEach((log) => {
-      const dateKey = new Date(log.createdAt).toLocaleDateString();
+      const dateKey = new Date(log.createdAt).toISOString().split("T")[0];
 
       activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
     });
 
     // =========================
-    // 🔥 MAP WITH ITINERARY (0 fallback)
+    // 🔥 MAP WITH ITINERARY (FIXED ✅)
     // =========================
     const activityTrend = itinerary.map((day) => {
-      const dateKey = new Date(day.date).toLocaleDateString();
+      const dateKey = new Date(day.date).toISOString().split("T")[0];
 
       return {
         date: dateKey,

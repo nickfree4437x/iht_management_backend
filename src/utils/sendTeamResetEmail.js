@@ -24,7 +24,7 @@ export const sendTeamResetEmail = async (email, resetLink) => {
               <td style="background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,0.15);">
 
                 <!-- Header -->
-                <div style="background:#CBB299; padding:20px; text-align:center; color:white;">
+                <div style="background:#C2A985; padding:20px; text-align:center; color:white;">
                   <h2 style="margin:0; font-size:20px;">India Heritage Travel</h2>
                 </div>
 
@@ -44,7 +44,7 @@ export const sendTeamResetEmail = async (email, resetLink) => {
                       display:inline-block;
                       padding:12px 26px;
                       margin:20px 0;
-                      background:#CBB299;
+                      background:#C2A985;
                       color:#ffffff;
                       text-decoration:none;
                       border-radius:8px;

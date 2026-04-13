@@ -11,7 +11,7 @@ async function startServer() {
   try {
     // ✅ Connect DB
     await prisma.$connect();
-    console.log("✅ PostgreSQL Database Connected");
+    console.log("✅ PostgreSql Database Connected");
 
     // ✅ Create HTTP server
     server = http.createServer(app);

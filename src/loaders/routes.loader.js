@@ -22,6 +22,7 @@ import notificationRoutes from "../routes/notifications/notificationRoutes.js";
 import invoiceRoutes from "../routes/invoice-city/invoiceRoutes.js";
 import cityRoutes from "../routes/invoice-city/cityRoutes.js";
 import clientDashboardRoutes from "../routes/client-account/clientDashboardRoutes.js";
+import emailRoutes from "../routes/invoice-city/emailRoutes.js";
 
 const loadRoutes = (app) => {
   // AUTH
@@ -69,6 +70,7 @@ const loadRoutes = (app) => {
   // INVOICE & CITY
   app.use("/api/invoice", invoiceRoutes);
   app.use("/api", cityRoutes);
+  app.use("/api/email", emailRoutes);
 
 };
 
