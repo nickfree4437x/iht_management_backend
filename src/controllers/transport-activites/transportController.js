@@ -41,12 +41,12 @@ export const addTransport = async (req, res) => {
     const transport = await prisma.transport.create({
       data: {
         tourId,
-        date: new Date(date),
+        date: date ? new Date(date) : null,   // 🔥 SAFE DATE
         type,
         from,
         to,
         details,
-        driverId
+        driverId: driverId || null            // 🔥 OPTIONAL DRIVER
       }
     });
 
@@ -77,12 +77,12 @@ export const updateTransport = async (req, res) => {
     const updated = await prisma.transport.update({
       where: { id },
       data: {
-        date: new Date(date),
+        date: date ? new Date(date) : null,   // 🔥 SAFE DATE
         type,
         from,
         to,
         details,
-        driverId
+        driverId: driverId || null            // 🔥 OPTIONAL DRIVER
       }
     });
 
@@ -116,6 +116,8 @@ export const deleteTransport = async (req, res) => {
 
 };
 
+
+// GET transports by driver
 export const getTransportsByDriver = async (req, res) => {
   try {
     const { driverId } = req.params;

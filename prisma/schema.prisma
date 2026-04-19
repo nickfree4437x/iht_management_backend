@@ -276,8 +276,8 @@ model Transport {
 
   details   String?
 
-  driverId  String
-  driver    Driver   @relation(fields: [driverId], references: [id])
+  driverId  String?   // ✅ OPTIONAL
+  driver    Driver?   @relation(fields: [driverId], references: [id])
 
   tourId    String
   tour      Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)

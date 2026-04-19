@@ -61,18 +61,6 @@ npx prisma migrate dev
 npm run dev
 ```
 
-Server will start at:
-👉 http://localhost:5000
-
----
-
-## 📡 API Base URL
-
-```
-http://localhost:5000/api
-```
-
----
 
 ## 🔐 Environment Variables
 
