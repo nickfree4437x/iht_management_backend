@@ -1,4 +1,11 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
+import fs from "fs"
+import path from "path"
+import { fileURLToPath } from "url"
+
+// 🔥 THIS IS IMPORTANT
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 export const generateInvoicePdf = async (data) => {
 
@@ -7,7 +14,6 @@ export const generateInvoicePdf = async (data) => {
     payments = [],
     startDate,
     endDate,
-    activities = [],
     additionalCosts = [],
     totalAmount = 0
   } = data
@@ -43,9 +49,35 @@ export const generateInvoicePdf = async (data) => {
     })
   }
 
+  // ================= LOGO =================
+  try {
+    const logoPath = path.join(__dirname, "../../public/logo1.png")
+    const logoBytes = fs.readFileSync(logoPath)
+    const logoImage = await pdfDoc.embedPng(logoBytes)
+
+    const logoWidth = 140
+    const logoHeight = 50
+
+    // 👇 LOGO THODA NICHE LAO
+    const logoY = y - 20
+
+    page.drawImage(logoImage, {
+      x: (600 - logoWidth) / 2,
+      y: logoY,
+      width: logoWidth,
+      height: logoHeight,
+    })
+
+    // 👇 GAP CONTROL (MAIN FIX)
+    y = logoY - 40   // 👈 yaha 70 ki jagah 40 (perfect spacing)
+
+  } catch (err) {
+    console.error("❌ Logo load error:", err.message)
+  }
+
   // ================= HEADER =================
   center("ACKNOWLEDGEMENT OF PAYMENT")
-  y -= 40
+  y -= 30
 
   page.drawText(`NAME: ${guestName}`, { x: 50, y, size: 11, font: boldFont })
   y -= 20
@@ -67,13 +99,10 @@ export const generateInvoicePdf = async (data) => {
     else additionalTotal -= amt
   })
 
-  const activityTotal = activities.reduce((s, a) => {
-    return s + (Number(a.price) || 0)
-  }, 0)
+  // ✅ FINAL COST (NO ACTIVITY)
+  const totalTripCost = initialCost + additionalTotal
 
-  const totalTripCost = initialCost + additionalTotal + activityTotal
-
-  // ================= 🔥 PAYMENT (FIXED) =================
+  // ================= PAYMENT =================
   let totalPaid = 0
   let totalFee = 0
 
@@ -83,25 +112,20 @@ export const generateInvoicePdf = async (data) => {
 
     totalPaid += amount
 
-    // 🔥 ONLY CARD FEE COUNT
     if (p?.paymentMode === "Card") {
       totalFee += fee
     }
   })
 
-  // 🔥 REAL MONEY RECEIVED
   const netReceived = totalPaid - totalFee
 
-  // ================= 🔥 BALANCE (FIXED) =================
-  const remaining = totalTripCost - netReceived
+  // ================= BALANCE =================
+  const remaining = Math.max(totalTripCost - netReceived, 0)
 
-  const balanceFee = Math.round(
-    (remaining > 0 ? remaining : 0) * 0.035
-  )
+  // ✅ ONLY FOR DISPLAY (NOT ADDING)
+  const razorpayFee = Math.round(remaining * 0.035)
 
-  const finalBalance = Math.max(0, remaining + balanceFee)
-
-  // ================= DRAW =================
+  // ================= DRAW FUNCTION =================
   const drawRow = (label, value, bold = false) => {
 
     const safeValue = Number(value) || 0
@@ -139,19 +163,13 @@ export const generateInvoicePdf = async (data) => {
 
   // ================= INVOICE =================
 
-  drawRow("INITIAL COSTING", initialCost)
-
-  if (additionalTotal !== 0) {
-    drawRow("ADDITIONAL COST", additionalTotal)
-  }
-
-  activities.forEach(a => {
-    drawRow(a.name, a.price)
-  })
-
   drawRow("TOTAL COST OF THE TRIP", totalTripCost, true)
 
   y -= 10
+
+   if (additionalTotal !== 0) {
+    drawRow("ADDITIONAL COST INCLUDED", additionalTotal)
+  }
 
   const lastPayment = payments[0]
 
@@ -164,7 +182,6 @@ export const generateInvoicePdf = async (data) => {
     totalPaid
   )
 
-  // 🔥 SHOW FEE IF EXISTS
   if (totalFee > 0) {
     page.drawText(`(Transaction Fee: Rs. ${totalFee.toLocaleString()})`, {
       x: 50,
@@ -174,34 +191,36 @@ export const generateInvoicePdf = async (data) => {
     })
     y -= 15
   }
-
-  // 🔥 OPTIONAL (RECOMMENDED)
-  page.drawText(`(Net Received: Rs. ${Math.round(netReceived).toLocaleString()})`, {
-    x: 50,
-    y,
-    size: 9,
-    font
-  })
   y -= 15
 
+  // ✅ CORRECT BALANCE
   drawRow(
-    "BALANCE TO BE PAID (INCLUDING BANK FEE)",
-    finalBalance,
+    "BALANCE TO BE PAID",
+    remaining,
     true
   )
 
   y -= 30
 
+  // ================= RAZORPAY INFO =================
+
+  if (remaining > 0) {
+    page.drawText(
+      `If you pay the remaining amount via Razorpay, an extra 3.50% charge will apply.`,
+      { x: 50, y, size: 9, font }
+    )
+
+    y -= 15
+
+    page.drawText(
+      `Extra 3.50% on Rs. ${remaining.toLocaleString()} = Rs. ${razorpayFee.toLocaleString()}`,
+      { x: 50, y, size: 9, font: boldFont }
+    )
+
+    y -= 25
+  }
+
   // ================= FOOTER =================
-
-  page.drawText(
-    "Credit card payments have a charge of 3.50% extra.",
-    { x: 300, y, size: 9, font }
-  )
-
-  y -= 15
-
-  y -= 40
 
   center("THANK YOU FOR TRAVELLING WITH US", 10)
 
@@ -210,13 +229,10 @@ export const generateInvoicePdf = async (data) => {
   page.drawText("Piyush Singh", { x: 50, y, size: 10, font: boldFont })
   y -= 15
 
-  page.drawText("Director", { x: 50, y, size: 10, font })
+  page.drawText("Founder - India Heritage Travel", { x: 50, y, size: 10, font })
   y -= 15
 
-  page.drawText("India Heritage Travel Pvt. Ltd.", { x: 50, y, size: 10, font })
-  y -= 15
-
-  page.drawText("info@indiaheritage.com", { x: 50, y, size: 9, font })
+  page.drawText("info.indiaheritagetravel@gmail.com", { x: 50, y, size: 9, font })
 
   const pdfBytes = await pdfDoc.save()
   return Buffer.from(pdfBytes)

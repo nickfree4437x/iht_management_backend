@@ -118,7 +118,6 @@ export const getTourPayments = async (req, res, next) => {
 /* ------------------------------------------------------ */
 /* CREATE PAYMENT */
 /* ------------------------------------------------------ */
-
 export const createPayment = async (req, res, next) => {
   try {
     const {
@@ -213,7 +212,8 @@ export const createPayment = async (req, res, next) => {
     try {
       const tour = await prisma.tour.findUnique({ where: { id: tourId } });
 
-      if (tour?.email) {
+      // ✅ ONLY SEND EMAIL IF EXPLICITLY REQUESTED
+      if (req.body.sendEmail === true && tour?.email) {
         await sendInvoiceEmail(tour.email, {
           guestName: tour.guestName,
           tourId,
@@ -224,6 +224,7 @@ export const createPayment = async (req, res, next) => {
           payments: formattedPayments
         });
       }
+
     } catch (emailError) {
       console.error("Invoice email failed:", emailError);
     }
@@ -299,62 +300,6 @@ export const updatePayment = async (req, res, next) => {
   }
 };
 
-/* ------------------------------------------------------ */
-/* REFUND PAYMENT */
-/* ------------------------------------------------------ */
-
-export const refundPayment = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-
-    const payment = await prisma.payment.findUnique({
-      where: { id }
-    });
-
-    if (!payment) {
-      return res.status(404).json({
-        success: false,
-        message: "Payment not found"
-      });
-    }
-
-    if (payment.refundAmount) {
-      return res.status(400).json({
-        success: false,
-        message: "Payment already refunded"
-      });
-    }
-
-    const refundAmount =
-      toNumber(payment.amount) - toNumber(payment.transactionFee);
-
-    const updated = await prisma.payment.update({
-      where: { id },
-      data: {
-        refundAmount,
-        refundDate: new Date(),
-        refundReason: "Tour cancelled",
-        status: "REFUNDED"
-      }
-    });
-
-    await createActivityAndEmit({
-      type: "payment",
-      message: `Payment refunded ₹${refundAmount}`,
-      tourId: payment.tourId,
-    });
-
-    res.json({
-      success: true,
-      message: "Refund processed successfully",
-      refundAmount,
-      payment: updated
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
 
 /* ------------------------------------------------------ */
 /* DELETE PAYMENT */

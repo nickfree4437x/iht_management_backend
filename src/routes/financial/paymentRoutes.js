@@ -5,7 +5,6 @@ import {
   createPayment,
   updatePayment,
   deletePayment,
-  refundPayment,
   getAdvisorRecentPayments // ✅ NEW IMPORT
 } from "../../controllers/financial/paymentController.js";
 
@@ -49,18 +48,6 @@ router.put(
   })
 );
 
-/* --------------------------------------- */
-/* 💸 REFUND PAYMENT */
-/* --------------------------------------- */
-router.put(
-  "/refund/:id",
-  withActivity(refundPayment, {
-    type: "payment_refunded",
-    entityType: "payment",
-    getMessage: (req) =>
-      `Payment refunded (ID: ${req.params.id})`,
-  })
-);
 
 /* --------------------------------------- */
 /* ❌ DELETE PAYMENT */
