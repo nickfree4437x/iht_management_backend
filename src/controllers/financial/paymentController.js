@@ -14,7 +14,10 @@ const toNumber = (val) => {
 const calculateTransactionFee = (amount, paymentMode) => {
   const amt = toNumber(amount);
   if (!amt) return 0;
-  if (paymentMode !== "Card") return 0;
+
+  // ✅ ONLY Card/Razorpay pe fee lage
+  if (paymentMode !== "Card/Razorpay") return 0;
+
   return Number((amt * 0.035).toFixed(2));
 };
 
