@@ -3,187 +3,62 @@ import { v2 as cloudinary } from "cloudinary";
 
 
 // ==============================
-// ✅ GET ALL ACTIVITIES (WITH SELECTION)
+// ✅ GET ACTIVITIES (TOUR SPECIFIC)
 // ==============================
 export const getActivities = async (req, res) => {
   try {
-
     const { tourId } = req.query;
 
     console.log("📥 GET ACTIVITIES | tourId:", tourId);
 
-    const activities = await prisma.activity.findMany({
-      orderBy: { createdAt: "desc" }
+    if (!tourId) return res.json([]);
+
+    const data = await prisma.tourActivity.findMany({
+      where: { tourId },
+      include: { activity: true }
     });
 
-    if (!tourId) {
-      return res.json(activities);
-    }
+    const activities = data
+      .filter(item => item.activity)
+      .map(item => item.activity);
 
-    const selected = await prisma.tourActivity.findMany({
-      where: { tourId }
-    });
-
-    const selectedIds = selected.map(a => a.activityId);
-
-    const result = activities.map(activity => ({
-      ...activity,
-      isSelected: selectedIds.includes(activity.id)
-    }));
-
-    res.json(result);
+    return res.json(activities);
 
   } catch (error) {
     console.error("❌ GET ACTIVITIES ERROR:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({
+      message: "Failed to load activities",
+      error: error.message
+    });
   }
 };
 
 
 // ==============================
-// ✅ GET TOUR ACTIVITIES
+// ✅ GET TOUR ACTIVITIES (OPTIONAL USE)
 // ==============================
 export const getTourActivities = async (req, res) => {
   try {
-
     const { tourId } = req.params;
 
     console.log("📥 GET TOUR ACTIVITIES | tourId:", tourId);
 
     const data = await prisma.tourActivity.findMany({
       where: { tourId },
-      include: {
-        activity: true
-      }
+      include: { activity: true }
     });
 
-    res.json(data);
+    return res.json(data);
 
   } catch (error) {
     console.error("❌ GET TOUR ACTIVITIES ERROR:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
 
 // ==============================
-// ✅ 🔥 TOGGLE ACTIVITY (MAIN FIX)
-// ==============================
-export const toggleActivityForTour = async (req, res) => {
-  try {
-
-    console.log("📥 TOGGLE REQUEST PARAMS:", req.params);
-    console.log("📥 TOGGLE REQUEST BODY:", req.body);
-
-    const { tourId } = req.params;
-    const { activityId } = req.body;
-
-    // 🔥 VALIDATION
-    if (!tourId) {
-      console.error("❌ Missing tourId");
-      return res.status(400).json({ message: "Tour ID is required" });
-    }
-
-    if (!activityId || typeof activityId !== "string") {
-      console.error("❌ Invalid activityId:", activityId);
-      return res.status(400).json({ message: "Valid Activity ID required" });
-    }
-
-    // 🔍 CHECK EXISTING
-    const existing = await prisma.tourActivity.findFirst({
-      where: { tourId, activityId }
-    });
-
-    console.log("🔍 Existing relation:", existing);
-
-    // ==============================
-    // 🔥 REMOVE (DESELECT)
-    // ==============================
-    if (existing) {
-
-      await prisma.tourActivity.delete({
-        where: { id: existing.id }
-      });
-
-      console.log("🗑️ Activity removed");
-
-      return res.json({
-        message: "Activity removed",
-        action: "removed",
-        activityId
-      });
-    }
-
-    // ==============================
-    // 🔥 ADD (SELECT)
-    // ==============================
-    const created = await prisma.tourActivity.create({
-      data: {
-        tourId,
-        activityId
-      }
-    });
-
-    console.log("✅ Activity added:", created);
-
-    res.json({
-      message: "Activity added",
-      action: "added",
-      activityId
-    });
-
-  } catch (error) {
-
-    console.error("❌ TOGGLE ERROR FULL:", error);
-
-    res.status(500).json({
-      error: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
-    });
-  }
-};
-
-
-// ==============================
-// ✅ SAVE ACTIVITIES (BULK)
-// ==============================
-export const saveTourActivities = async (req, res) => {
-  try {
-
-    console.log("📥 SAVE BULK BODY:", req.body);
-
-    const { tourId } = req.params;
-    const { activities } = req.body;
-
-    if (!Array.isArray(activities)) {
-      return res.status(400).json({ message: "Activities must be array" });
-    }
-
-    await prisma.tourActivity.deleteMany({
-      where: { tourId }
-    });
-
-    const data = activities.map((id) => ({
-      tourId,
-      activityId: id
-    }));
-
-    await prisma.tourActivity.createMany({
-      data,
-      skipDuplicates: true
-    });
-
-    res.json({ message: "Activities saved successfully" });
-
-  } catch (error) {
-    console.error("❌ SAVE ERROR:", error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
-
-// ==============================
-// ✅ CREATE ACTIVITY
+// ✅ CREATE ACTIVITY (AUTO ASSIGN)
 // ==============================
 export const createActivity = async (req, res) => {
   try {
@@ -193,31 +68,45 @@ export const createActivity = async (req, res) => {
     const {
       name,
       description,
-      price,
       duration,
       category,
-      availability
+      tourId
     } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "Name is required" });
+    }
+
+    if (!tourId) {
+      return res.status(400).json({ message: "Tour ID is required" });
+    }
 
     const image = req.file ? req.file.path : null;
 
+    // 🔥 Create activity
     const activity = await prisma.activity.create({
       data: {
-        name,
-        description,
+        name: name.trim(),
+        description: description || null,
         image,
-        price: price ? Number(price) : null,
-        duration,
-        category,
-        availability: availability === "true"
+        duration: duration || null,
+        category: category || null
       }
     });
 
-    res.json(activity);
+    // 🔥 Auto assign to tour
+    await prisma.tourActivity.create({
+      data: {
+        tourId,
+        activityId: activity.id
+      }
+    });
+
+    return res.json(activity);
 
   } catch (error) {
     console.error("❌ CREATE ERROR:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
@@ -235,10 +124,8 @@ export const updateActivity = async (req, res) => {
     const {
       name,
       description,
-      price,
       duration,
-      category,
-      availability
+      category
     } = req.body;
 
     const existingActivity = await prisma.activity.findUnique({
@@ -251,8 +138,8 @@ export const updateActivity = async (req, res) => {
 
     let image = existingActivity.image;
 
+    // 🖼️ Replace image if new uploaded
     if (req.file) {
-
       if (existingActivity.image) {
         const urlParts = existingActivity.image.split("/");
         const fileName = urlParts[urlParts.length - 1];
@@ -267,27 +154,25 @@ export const updateActivity = async (req, res) => {
     const activity = await prisma.activity.update({
       where: { id },
       data: {
-        name,
-        description,
+        name: name ? name.trim() : existingActivity.name,
+        description: description ?? existingActivity.description,
         image,
-        price: price ? Number(price) : null,
-        duration,
-        category,
-        availability: availability === "true"
+        duration: duration ?? existingActivity.duration,
+        category: category ?? existingActivity.category
       }
     });
 
-    res.json(activity);
+    return res.json(activity);
 
   } catch (error) {
     console.error("❌ UPDATE ERROR:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
 
 // ==============================
-// ✅ DELETE ACTIVITY
+// 🔥 DELETE ACTIVITY (FORCE DELETE)
 // ==============================
 export const deleteActivity = async (req, res) => {
   try {
@@ -304,6 +189,12 @@ export const deleteActivity = async (req, res) => {
       return res.status(404).json({ message: "Activity not found" });
     }
 
+    // 🔥 Delete all relations first
+    await prisma.tourActivity.deleteMany({
+      where: { activityId: id }
+    });
+
+    // 🔥 Delete image from Cloudinary
     if (activity.image) {
       const urlParts = activity.image.split("/");
       const fileName = urlParts[urlParts.length - 1];
@@ -312,14 +203,15 @@ export const deleteActivity = async (req, res) => {
       await cloudinary.uploader.destroy(publicId);
     }
 
+    // 🔥 Delete activity
     await prisma.activity.delete({
       where: { id }
     });
 
-    res.json({ message: "Activity deleted successfully" });
+    return res.json({ message: "Activity deleted" });
 
   } catch (error) {
     console.error("❌ DELETE ERROR:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };

@@ -358,10 +358,8 @@ model Activity {
   description  String?
   image        String?
 
-  price        Decimal? @db.Decimal(10, 2)
   duration     String?
   category     String?
-  availability Boolean  @default(true)
 
   createdAt    DateTime @default(now())
 

@@ -3,8 +3,6 @@ import express from "express";
 import {
   getActivities,
   getTourActivities,
-  toggleActivityForTour,   // 🔥 NEW (IMPORTANT)
-  saveTourActivities,
   createActivity,
   updateActivity,
   deleteActivity
@@ -15,58 +13,16 @@ import { withActivity } from "../../utils/withActivity.js";
 
 const router = express.Router();
 
-/*
-|--------------------------------------------------------------------------
-| Activity Routes (FINAL CLEAN VERSION)
-|--------------------------------------------------------------------------
-*/
-
 /* =========================
-   🧪 TEST ROUTE (DEBUG)
-========================= */
-router.get("/test", (req, res) => {
-  res.json({ message: "Activities API working ✅" });
-});
-
-
-/* =========================
-   📥 GET ALL ACTIVITIES
+   📥 GET ACTIVITIES (BY TOUR)
 ========================= */
 router.get("/", getActivities);
 
 
 /* =========================
-   📥 GET ACTIVITIES FOR TOUR
+   📥 GET ACTIVITIES FOR TOUR (OPTIONAL)
 ========================= */
 router.get("/tour/:tourId", getTourActivities);
-
-
-/* =========================
-   🔥 TOGGLE ACTIVITY (FIXED)
-========================= */
-router.post(
-  "/tour/:tourId",
-  withActivity(toggleActivityForTour, {
-    type: "tour_activity_toggled",
-    entityType: "tour",
-    getMessage: (req) =>
-      `Activity toggled for tour ${req.params.tourId}`,
-  })
-);
-
-
-/* =========================
-   💾 BULK SAVE (OPTIONAL)
-========================= */
-router.post(
-  "/tour/:tourId/bulk",
-  withActivity(saveTourActivities, {
-    type: "tour_activities_updated",
-    entityType: "tour",
-    getMessage: (req) =>
-      `Activities updated for tour ${req.params.tourId}`,
-  })
-);
 
 
 /* =========================
