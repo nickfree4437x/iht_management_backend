@@ -188,7 +188,7 @@ export const sendTourPreviewEmail = async (req, res) => {
           <th>To</th>
           <th>Vehicle</th>
           <th>Driver</th>
-          <th>Phone</th>
+          <th>Details</th>
         </tr>
 
         ${transport.map(t => `
@@ -204,7 +204,13 @@ export const sendTourPreviewEmail = async (req, res) => {
             <td style="color:#1F2937">${t.to || "-"}</td>
             <td style="color:#1F2937">${t.driver?.vehicle || "-"}</td>
             <td style="color:#1F2937">${t.driver?.name || "-"}</td>
-            <td style="color:#1F2937">${t.driver?.phone || "-"}</td>
+            <td style="color:#1F2937">
+              ${
+                t.details
+                  ? t.details
+                  : `${t.driver?.vehicle || "-"} | ${t.driver?.name || "-"} | ${t.driver?.phone || "-"}`
+              }
+            </td>
           </tr>
         `).join("")}
       </table>
