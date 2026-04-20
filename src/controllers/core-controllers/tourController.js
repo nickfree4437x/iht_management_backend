@@ -385,13 +385,19 @@ export const updateTour = async (req, res, next) => {
 
     const {
       guestName,
-      phone,
+      pax,
       email,
+      phone,
       country,
-      arrivalCity
+      tourName,
+      arrivalCity,
+      startDate,
+      endDate,
+      totalCost,
+      status,
+      advisorId
     } = req.body;
 
-    // ✅ Check tour exists
     const existingTour = await prisma.tour.findUnique({
       where: { id }
     });
@@ -403,40 +409,41 @@ export const updateTour = async (req, res, next) => {
       });
     }
 
-    // ✅ SAFE DATA BUILD
     const dataToUpdate = {};
 
-    if (guestName !== undefined) dataToUpdate.guestName = guestName || null;
-    if (phone !== undefined) dataToUpdate.phone = phone || null;
-    if (email !== undefined) dataToUpdate.email = email || null;
-    if (country !== undefined) dataToUpdate.country = country || null;
-    if (arrivalCity !== undefined) dataToUpdate.arrivalCity = arrivalCity || null;
+    if (guestName !== undefined) dataToUpdate.guestName = guestName;
+    if (pax !== undefined) dataToUpdate.pax = Number(pax);
+    if (email !== undefined) dataToUpdate.email = email;
+    if (phone !== undefined) dataToUpdate.phone = phone;
+    if (country !== undefined) dataToUpdate.country = country;
+    if (tourName !== undefined) dataToUpdate.tourName = tourName;
+    if (arrivalCity !== undefined) dataToUpdate.arrivalCity = arrivalCity;
 
-    // ✅ Prisma update with detailed error catch
-    let updatedTour;
+    if (startDate !== undefined)
+      dataToUpdate.startDate = new Date(startDate);
 
-    try {
-      updatedTour = await prisma.tour.update({
-        where: { id },
-        data: dataToUpdate,
-        include: {
-          advisor: {
-            include: {
-              _count: {
-                select: { tours: true }
-              }
+    if (endDate !== undefined)
+      dataToUpdate.endDate = new Date(endDate);
+
+    if (totalCost !== undefined)
+      dataToUpdate.totalCost = Number(totalCost);
+
+    if (status !== undefined) dataToUpdate.status = status;
+    if (advisorId !== undefined) dataToUpdate.advisorId = advisorId;
+
+    const updatedTour = await prisma.tour.update({
+      where: { id },
+      data: dataToUpdate,
+      include: {
+        advisor: {
+          include: {
+            _count: {
+              select: { tours: true }
             }
           }
         }
-      });
-    } catch (prismaError) {
-      console.error("🔥 PRISMA ERROR:", prismaError);
-
-      return res.status(500).json({
-        success: false,
-        message: prismaError.message,
-      });
-    }
+      }
+    });
 
     res.json({
       success: true,
