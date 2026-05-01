@@ -432,6 +432,8 @@ model TravelTicket {
 
   image     String?
 
+  fileType  String?   // ✅ ADD THIS (IMPORTANT)
+
   tourId    String
   tour      Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
 

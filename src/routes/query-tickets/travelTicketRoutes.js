@@ -5,16 +5,23 @@ import {
   createTicket,
   getTicketsByTour,
   updateTicket,
-  deleteTicket
+  deleteTicket,
+  viewTicketFile   // ✅ ADD THIS
 } from "../../controllers/query-tickets/travelTicketController.js";
 
 import { withActivity } from "../../utils/withActivity.js";
 
 const router = express.Router();
 
-// =========================
+//////////////////////////////
+// 🔥 VIEW PDF (FIX)
+//////////////////////////////
+router.get("/view", viewTicketFile);   // ✅ MUST BE BEFORE /:tourId
+
+
+//////////////////////////////
 // ➕ CREATE TICKET
-// =========================
+//////////////////////////////
 router.post(
   "/",
   uploadTicket.single("image"),
@@ -26,14 +33,14 @@ router.post(
   })
 );
 
-// =========================
+//////////////////////////////
 // 📥 GET TICKETS BY TOUR
-// =========================
+//////////////////////////////
 router.get("/:tourId", getTicketsByTour);
 
-// =========================
+//////////////////////////////
 // ✏️ UPDATE TICKET
-// =========================
+//////////////////////////////
 router.put(
   "/:id",
   uploadTicket.single("image"),
@@ -45,9 +52,9 @@ router.put(
   })
 );
 
-// =========================
+//////////////////////////////
 // ❌ DELETE TICKET
-// =========================
+//////////////////////////////
 router.delete(
   "/:id",
   withActivity(deleteTicket, {
