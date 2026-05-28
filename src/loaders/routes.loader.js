@@ -8,6 +8,7 @@ import dashboardRoutes from "../routes/core-routes/dashboardRoutes.js";
 import documentRoutes from "../routes/docuemts-guests/documentRoutes.js";
 import guestRoutes from "../routes/docuemts-guests/guestRoutes.js";
 import itineraryRoutes from "../routes/docuemts-guests/itineraryRoutes.js";
+import voucherDownloadRoutes from "../routes/hotelvoucher/voucherDownloadRoutes.js";
 import transportRoutes from "../routes/transport-activites/transportRoutes.js";
 import activityRoutes from "../routes/transport-activites/activityRoutes.js";
 import tourOtherDetailRoutes from "../routes/transport-activites/tourOtherDetailRoutes.js";
@@ -45,6 +46,9 @@ const loadRoutes = (app) => {
   app.use("/api/v1/documents", documentRoutes);
   app.use("/api/guests", guestRoutes);
   app.use("/api/itinerary", itineraryRoutes);
+
+  //HOTEL VOUCHER
+  app.use("/api/v1/hotels/voucher/download",voucherDownloadRoutes);
 
   // TRANSPORT & ACTIVITIES
   app.use("/api/v1/transports", transportRoutes);

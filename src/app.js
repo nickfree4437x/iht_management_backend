@@ -40,6 +40,8 @@ app.use(cookieParser());
 ------------------------------*/
 app.use("/uploads", express.static("uploads"));
 
+app.use(express.static("public"));
+
 /* -----------------------------
    Routes (🔥 CLEAN)
 ------------------------------*/

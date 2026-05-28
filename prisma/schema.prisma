@@ -8,14 +8,13 @@ datasource db {
 }
 
 /* ================= USER ================= */
-
 model User {
   id              String   @id @default(uuid())
   username        String   @unique
   email           String?  @unique
   password        String
 
-  role            String   @default("user") // ✅ enum removed
+  role            String   @default("user") 
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -36,7 +35,6 @@ model User {
 }
 
 /* ================= LOGIN ACTIVITY ================= */
-
 model LoginActivity {
   id        String   @id @default(uuid())
 
@@ -54,7 +52,6 @@ model LoginActivity {
 }
 
 /* ================= ACTIVITY LOG ================= */
-
 model ActivityLog {
   id          String   @id @default(uuid())
 
@@ -80,7 +77,6 @@ model ActivityLog {
 }
 
 /* ================= REFRESH TOKEN ================= */
-
 model RefreshToken {
   id        String   @id @default(uuid())
 
@@ -96,7 +92,6 @@ model RefreshToken {
 }
 
 /* ================= NOTIFICATION ================= */
-
 model Notification {
   id        String   @id @default(uuid())
 
@@ -120,7 +115,6 @@ model Notification {
 }
 
 /* ================= ADVISOR ================= */
-
 model Advisor {
   id        String   @id @default(uuid())
   name      String
@@ -136,7 +130,6 @@ model Advisor {
 }
 
 /* ================= TOUR ================= */
-
 model Tour {
   id                  String   @id @default(uuid())
 
@@ -185,6 +178,7 @@ model Tour {
   travelTickets       TravelTicket[]
   otherDetails        TourOtherDetail?
   clientAccount       ClientAccount?
+  hotelVouchers HotelVoucher[]
 
   @@index([advisorId])
   @@index([driverId])
@@ -194,7 +188,6 @@ model Tour {
 }
 
 /* ================= PAYMENT ================= */
-
 model Payment {
   id              String   @id @default(uuid())
 
@@ -207,7 +200,7 @@ model Payment {
   transactionFee  Decimal? @db.Decimal(10, 2)
 
   paymentMode     String?
-  status          String   @default("pending") // ✅ enum removed
+  status          String   @default("pending")
 
   comment         String?   @default("N/A")
 
@@ -223,7 +216,6 @@ model Payment {
 }
 
 /* ================= HOTEL ================= */
-
 model Hotel {
   id        String   @id @default(uuid())
 
@@ -239,12 +231,62 @@ model Hotel {
   notes     String?
 
   tours     Tour[]
+  vouchers  HotelVoucher[]
 
   createdAt DateTime @default(now())
 }
 
-/* ================= DRIVER ================= */
+/* ================= HOTEL VOUCHER ================= */
+model HotelVoucher {
 
+  id String @id @default(uuid())
+
+  status         String
+  confirmationNo String?
+
+  date           DateTime
+
+  hotelName      String
+  hotelAddress   String?
+
+  clientName     String
+  gender         String
+
+  pax            Int
+
+  checkIn        DateTime
+  checkOut       DateTime
+
+  totalNights    Int?
+
+  roomCategory   String?
+
+  plan           String
+
+  dateLines      Json
+
+  hotelId        String?
+
+  hotel Hotel? @relation(fields: [hotelId], references: [id])
+
+  tourId         String?
+
+  tour Tour? @relation(fields: [tourId], references: [id])
+
+  createdAt      DateTime @default(now())
+
+  updatedAt      DateTime @updatedAt
+
+  @@index([hotelId])
+  @@index([tourId])
+  @@index([status])
+  @@index([checkIn])
+  @@index([checkOut])
+  @@index([createdAt])
+
+}
+
+/* ================= DRIVER ================= */
 model Driver {
   id            String   @id @default(uuid())
 
@@ -264,7 +306,6 @@ model Driver {
 }
 
 /* ================= TRANSPORT ================= */
-
 model Transport {
   id        String   @id @default(uuid())
 
@@ -276,7 +317,7 @@ model Transport {
 
   details   String?
 
-  driverId  String?   // ✅ OPTIONAL
+  driverId  String?  
   driver    Driver?   @relation(fields: [driverId], references: [id])
 
   tourId    String
@@ -289,7 +330,6 @@ model Transport {
 }
 
 /* ================= DOCUMENT ================= */
-
 model Document {
   id           String   @id @default(uuid())
 
@@ -311,7 +351,6 @@ model Document {
 }
 
 /* ================= GUEST ================= */
-
 model Guest {
   id             String   @id @default(uuid())
   name           String
@@ -329,7 +368,6 @@ model Guest {
 }
 
 /* ================= ITINERARY ================= */
-
 model Itinerary {
   id          String   @id @default(uuid())
 
@@ -351,7 +389,6 @@ model Itinerary {
 }
 
 /* ================= ACTIVITY ================= */
-
 model Activity {
   id           String   @id @default(uuid())
   name         String
@@ -367,7 +404,6 @@ model Activity {
 }
 
 /* ================= TOUR ACTIVITY ================= */
-
 model TourActivity {
   id         String   @id @default(uuid())
 
@@ -381,7 +417,6 @@ model TourActivity {
 }
 
 /* ================= OTHER DETAILS ================= */
-
 model TourOtherDetail {
   id              String   @id @default(uuid())
 
@@ -398,7 +433,6 @@ model TourOtherDetail {
 }
 
 /* ================= QUERY ================= */
-
 model Query {
   id            String   @id @default(uuid())
 
@@ -407,7 +441,7 @@ model Query {
 
   attachmentUrl String?
 
-  status        String   @default("pending") // ✅ enum removed
+  status        String   @default("pending")
 
   tourId        String
   tour          Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
@@ -419,7 +453,6 @@ model Query {
 }
 
 /* ================= TRAVEL TICKET ================= */
-
 model TravelTicket {
   id        String   @id @default(uuid())
 
@@ -432,7 +465,7 @@ model TravelTicket {
 
   image     String?
 
-  fileType  String?   // ✅ ADD THIS (IMPORTANT)
+  fileType  String? 
 
   tourId    String
   tour      Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
@@ -444,7 +477,6 @@ model TravelTicket {
 }
 
 /* ================= ADDITIONAL COST ================= */
-
 model AdditionalCost {
   id        String   @id @default(uuid())
 
@@ -461,7 +493,6 @@ model AdditionalCost {
 }
 
 /* ================= CLIENT ACCOUNT ================= */
-
 model ClientAccount {
   id        String   @id @default(uuid())
 
@@ -476,3 +507,4 @@ model ClientAccount {
 
   createdAt DateTime @default(now())
 }
+
