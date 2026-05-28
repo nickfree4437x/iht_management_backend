@@ -2,7 +2,7 @@ import express from "express";
 
 import {
   downloadAllVouchers
-} from "../../controllers/hotelVoucher/downloadAllVouchers.js";
+} from "../../controllers/hotel-voucher/downloadAllVouchers.js";
 
 const router =
   express.Router();

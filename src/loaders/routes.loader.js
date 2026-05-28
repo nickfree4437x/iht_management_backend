@@ -8,7 +8,7 @@ import dashboardRoutes from "../routes/core-routes/dashboardRoutes.js";
 import documentRoutes from "../routes/docuemts-guests/documentRoutes.js";
 import guestRoutes from "../routes/docuemts-guests/guestRoutes.js";
 import itineraryRoutes from "../routes/docuemts-guests/itineraryRoutes.js";
-import voucherDownloadRoutes from "../routes/hotelvoucher/voucherDownloadRoutes.js";
+import voucherDownloadRoutes from "../routes/hotel-voucher/voucherDownloadRoutes.js";
 import transportRoutes from "../routes/transport-activites/transportRoutes.js";
 import activityRoutes from "../routes/transport-activites/activityRoutes.js";
 import tourOtherDetailRoutes from "../routes/transport-activites/tourOtherDetailRoutes.js";
