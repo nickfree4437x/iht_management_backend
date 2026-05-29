@@ -572,6 +572,27 @@ export const createHotelVoucher = async (req, res, next) => {
 
           }
 
+          else if (plan === "CP") {
+
+            text =
+              "Breakfast + Room";
+
+          }
+
+          else if (plan === "MP") {
+
+            text =
+              "Breakfast + Lunch + Dinner + Room";
+
+          }
+
+          else if (plan === "AP") {
+
+            text =
+              "Breakfast + Dinner + Room";
+
+          }
+
           else {
 
             text =
@@ -956,6 +977,27 @@ export const updateHotelVoucher = async (
 
           }
 
+          else if (plan === "CP") {
+
+            text =
+              "Breakfast + Room";
+
+          }
+
+          else if (plan === "MP") {
+
+            text =
+              "Breakfast + Lunch + Dinner + Room";
+
+          }
+
+          else if (plan === "AP") {
+
+            text =
+              "Breakfast + Dinner + Room";
+
+          }
+
           else {
 
             text =
@@ -1053,7 +1095,6 @@ export const updateHotelVoucher = async (
 // ======================================
 // ❌ DELETE HOTEL VOUCHER
 // ======================================
-
 export const deleteHotelVoucher = async (
   req,
   res,

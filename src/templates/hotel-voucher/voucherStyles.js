@@ -178,7 +178,7 @@ const voucherStyles = `
 
     display: block;
 
-    margin-left: auto;
+    margin-left: 80px;
 
     margin-top: -60px;
 
@@ -227,9 +227,9 @@ const voucherStyles = `
 
   .voucher-line {
 
-    font-size: 15px;
+    font-size: 13.5px;
 
-    line-height: 1.7;
+    line-height: 1.5;
 
     margin-bottom: 16px;
 
@@ -239,7 +239,7 @@ const voucherStyles = `
 
   .date-lines {
 
-    margin-top: 10px;
+    margin-top: 7px;
 
     margin-bottom: 42px;
 
@@ -247,11 +247,35 @@ const voucherStyles = `
 
   .date-row {
 
-    font-size: 15px;
-
+    font-size: 14px;
+    display: flex;
+    align-items: center;
     margin-bottom: 2px;
+    line-height: 1;
 
-    line-height: 1.25;
+  }
+
+  .date-value {
+
+    width: 85px;
+
+    flex-shrink: 0;
+
+  }
+
+  .colon {
+
+    width: 15px;
+
+    text-align: center;
+
+    flex-shrink: 0;
+
+  }
+
+  .date-text {
+
+    flex: 1;
 
   }
 

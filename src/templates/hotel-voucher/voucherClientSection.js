@@ -96,11 +96,17 @@ const voucherClientSection = (
 
             <div class="date-row">
 
-              ${formattedDate}
+              <span class="date-value">
+                ${formattedDate}
+              </span>
 
-              :
+              <span class="colon">
+                :
+              </span>
 
-              ${item.text}
+              <span class="date-text">
+                ${item.text}
+              </span>
 
             </div>
 
