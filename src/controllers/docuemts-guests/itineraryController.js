@@ -1,8 +1,8 @@
 import prisma from "../../config/prisma.js";
-import { createActivityAndEmit } from "../../utils/activityHelper.js"; // 🔥 ADD
+import { createActivityAndEmit } from "../../utils/activityHelper.js";
 
 
-// GET itinerary by tour (UNCHANGED)
+// GET itinerary by tour
 export const getItinerary = async (req, res) => {
   try {
 
@@ -97,13 +97,12 @@ export const createItinerary = async (req, res) => {
         destination: destination || null,
         city: city || null,
         hotel: hotel || null,
-        roomType: roomType || null,
-        status: status || null,
+        roomType: roomType || "Deluxe Room",
+        status: status || "Confirmed",
         tourId
       }
     });
 
-    // 🔥 ACTIVITY
     await createActivityAndEmit({
       type: "itinerary",
       message: `Itinerary added${destination ? ` - ${destination}` : ""}`,
@@ -140,6 +139,12 @@ export const updateItinerary = async (req, res) => {
       where: { id }
     });
 
+    if (!existing) {
+      return res.status(404).json({
+        message: "Itinerary not found"
+      });
+    }
+
     const {
       date,
       destination,
@@ -152,16 +157,27 @@ export const updateItinerary = async (req, res) => {
     const itinerary = await prisma.itinerary.update({
       where: { id },
       data: {
-        ...(date !== undefined && { date: date ? new Date(date) : null }),
-        ...(destination !== undefined && { destination }),
-        ...(city !== undefined && { city }),
-        ...(hotel !== undefined && { hotel }),
-        ...(roomType !== undefined && { roomType }),
-        ...(status !== undefined && { status })
+        ...(date !== undefined && {
+          date: date ? new Date(date) : null
+        }),
+        ...(destination !== undefined && {
+          destination
+        }),
+        ...(city !== undefined && {
+          city
+        }),
+        ...(hotel !== undefined && {
+          hotel
+        }),
+        ...(roomType !== undefined && {
+          roomType
+        }),
+        ...(status !== undefined && {
+          status
+        })
       }
     });
 
-    // 🔥 ACTIVITY
     await createActivityAndEmit({
       type: "itinerary",
       message: "Itinerary updated",
@@ -198,11 +214,16 @@ export const deleteItinerary = async (req, res) => {
       where: { id }
     });
 
+    if (!existing) {
+      return res.status(404).json({
+        message: "Itinerary not found"
+      });
+    }
+
     await prisma.itinerary.delete({
       where: { id }
     });
 
-    // 🔥 ACTIVITY
     await createActivityAndEmit({
       type: "itinerary",
       message: "Itinerary deleted",
