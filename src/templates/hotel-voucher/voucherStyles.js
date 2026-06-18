@@ -215,68 +215,50 @@ const voucherStyles = `
 
   .client-name {
 
-    font-size: 16px;
+    font-size: 15px;
 
-    font-weight: 700;
+    font-weight: 600;
 
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 
   }
-
-
 
   .voucher-line {
 
-    font-size: 13.5px;
+    font-size: 12.5px;
 
-    line-height: 1.5;
+    line-height: 1.45;
 
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 
   }
-
 
 
   .date-lines {
 
-    margin-top: 7px;
+    margin-top: 6px;
 
-    margin-bottom: 42px;
+    margin-bottom: 24px;
 
   }
 
   .date-row {
-
-    font-size: 14px;
     display: flex;
     align-items: center;
-    margin-bottom: 2px;
-    line-height: 1;
-
+    gap: 6px;
   }
 
   .date-value {
-
-    width: 85px;
-
-    flex-shrink: 0;
-
+    white-space: nowrap;
+    font-size: 13px;
   }
 
   .colon {
-
-    width: 15px;
-
-    text-align: center;
-
-    flex-shrink: 0;
-
+    font-size: 13px;
   }
 
   .date-text {
-
-    flex: 1;
-
+    font-size: 13px;
   }
 
 
@@ -355,7 +337,7 @@ const voucherStyles = `
 
     right: 72px;
 
-    bottom: 180px;
+    bottom: 225px;
 
     text-align: center;
 
