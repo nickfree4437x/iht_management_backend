@@ -347,6 +347,7 @@ export const createHotelVoucher = async (req, res, next) => {
 
       // 🔥 CLIENT
       clientName,
+      title,
       gender,
       pax,
 
@@ -624,64 +625,72 @@ export const createHotelVoucher = async (req, res, next) => {
     };
 
 
-// ======================================================
-// 🔥 CREATE HOTEL VOUCHER
-// ======================================================
-const voucher =
-  await prisma.hotelVoucher.create({
+    // ======================================================
+    // 🔥 CREATE HOTEL VOUCHER
+    // ======================================================
 
-    data: {
+    const voucher =
+      await prisma.hotelVoucher.create({
 
-      tourId,
+        data: {
 
-      status,
-      confirmationNo,
+          tourId,
 
-      date:
-        new Date(date),
+          status,
+          confirmationNo,
 
-      hotelName,
-      hotelAddress,
-      clientName,
-      gender,
+          date:
+            new Date(date),
 
-      pax:
-        Number(pax),
-      checkIn:
-        checkInDate,
+          hotelName,
+          hotelAddress,
 
-      checkOut:
-        checkOutDate,
+          // 🔥 CLIENT
+          clientName,
+          title,
+          gender,
 
-      roomCategory,
+          pax:
+            Number(pax),
 
-      plan,
-      dateLines:
-        generateDateLines(),
+          checkIn:
+            checkInDate,
 
-      totalNights
+          checkOut:
+            checkOutDate,
 
-    }
+          roomCategory,
 
-  });
-res.status(201).json({
+          plan,
 
-  success: true,
+          dateLines:
+            generateDateLines(),
 
-  message:
-    "Hotel voucher created",
+          totalNights
 
-  voucher
+        }
 
-});
+      });
 
-}
 
-catch (error) {
+    res.status(201).json({
 
-next(error);
+      success: true,
 
-}
+      message:
+        "Hotel voucher created",
+
+      voucher
+
+    });
+
+  }
+
+  catch (error) {
+
+    next(error);
+
+  }
 
 };
 
@@ -772,6 +781,7 @@ export const updateHotelVoucher = async (
 
       // 🔥 CLIENT
       clientName,
+      title,
       gender,
       pax,
 
@@ -809,13 +819,13 @@ export const updateHotelVoucher = async (
       });
 
     }
+
     const existingVoucher =
       await prisma.hotelVoucher.findUnique({
 
         where: { id }
 
       });
-
 
     if (!existingVoucher) {
 
@@ -830,12 +840,15 @@ export const updateHotelVoucher = async (
 
     }
 
+    // ======================================================
+    // 🔥 DATE VALIDATION
+    // ======================================================
+
     const checkInDate =
       new Date(checkIn);
 
     const checkOutDate =
       new Date(checkOut);
-
 
     if (checkOutDate <= checkInDate) {
 
@@ -849,6 +862,10 @@ export const updateHotelVoucher = async (
       });
 
     }
+
+    // ======================================================
+    // 🔥 TOTAL NIGHTS
+    // ======================================================
 
     const totalNights =
       Math.ceil(
@@ -865,6 +882,10 @@ export const updateHotelVoucher = async (
         )
 
       );
+
+    // ======================================================
+    // 🔥 GENERATE DATE LINES
+    // ======================================================
 
     const generateDateLines = () => {
 
@@ -883,24 +904,24 @@ export const updateHotelVoucher = async (
       let current =
         new Date(start);
 
-
       while (current <= end) {
 
         const formattedDate =
           current.toLocaleDateString("en-GB");
 
-
         const isFirstDay =
           current.getTime() ===
           start.getTime();
-
 
         const isLastDay =
           current.getTime() ===
           end.getTime();
 
-
         let text = "";
+
+        // ======================================================
+        // 🔥 SINGLE DAY
+        // ======================================================
 
         if (
           isFirstDay &&
@@ -921,6 +942,10 @@ export const updateHotelVoucher = async (
           }
 
         }
+
+        // ======================================================
+        // 🔥 FIRST DAY
+        // ======================================================
 
         else if (isFirstDay) {
 
@@ -952,6 +977,10 @@ export const updateHotelVoucher = async (
 
         }
 
+        // ======================================================
+        // 🔥 LAST DAY
+        // ======================================================
+
         else if (isLastDay) {
 
           if (plan === "NA") {
@@ -968,6 +997,10 @@ export const updateHotelVoucher = async (
           }
 
         }
+
+        // ======================================================
+        // 🔥 MIDDLE DAYS
+        // ======================================================
 
         else {
 
@@ -1007,7 +1040,6 @@ export const updateHotelVoucher = async (
 
         }
 
-
         result.push({
 
           date: formattedDate,
@@ -1016,20 +1048,25 @@ export const updateHotelVoucher = async (
 
         });
 
-
         current.setDate(
           current.getDate() + 1
         );
 
       }
 
-
       return result;
 
     };
+
+    // ======================================================
+    // 🔥 UPDATE HOTEL VOUCHER
+    // ======================================================
+
     const voucher =
       await prisma.hotelVoucher.update({
+
         where: { id },
+
         data: {
 
           // 🔥 TOUR
@@ -1049,6 +1086,7 @@ export const updateHotelVoucher = async (
 
           // 🔥 CLIENT
           clientName,
+          title,
           gender,
 
           pax:
@@ -1072,7 +1110,9 @@ export const updateHotelVoucher = async (
             generateDateLines(),
 
           totalNights
+
         }
+
       });
 
     res.status(200).json({
@@ -1081,15 +1121,19 @@ export const updateHotelVoucher = async (
 
       message:
         "Hotel voucher updated",
+
       voucher
+
     });
 
   }
+
   catch (error) {
 
     next(error);
 
   }
+
 };
 
 // ======================================

@@ -2,6 +2,16 @@ const voucherClientSection = (
   voucher
 ) => {
 
+  // ======================================================
+  // 🔥 CLIENT TITLE (Backward Compatible)
+  // ======================================================
+
+  const clientTitle =
+    voucher.title ||
+    (voucher.gender === "Male"
+      ? "Mr."
+      : "Ms.");
+
   return `
 
     <div class="client-section">
@@ -10,9 +20,7 @@ const voucherClientSection = (
 
         Client Name :
 
-        ${voucher.gender === "Female"
-          ? "Mrs."
-          : "Mr."}
+        ${clientTitle}
 
         ${voucher.clientName}
 
@@ -21,8 +29,6 @@ const voucherClientSection = (
           : ""}
 
       </div>
-
-
 
       <div class="voucher-line">
 
@@ -58,8 +64,6 @@ const voucherClientSection = (
 
       </div>
 
-
-
       <div class="date-lines">
 
         ${voucher.dateLines.map((item) => {
@@ -89,8 +93,6 @@ const voucherClientSection = (
               }
 
             );
-
-
 
           return `
 

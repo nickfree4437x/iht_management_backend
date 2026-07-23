@@ -250,6 +250,7 @@ model HotelVoucher {
   hotelAddress   String?
 
   clientName     String
+  title          String @default("Mr.")
   gender         String
 
   pax            Int
@@ -283,7 +284,6 @@ model HotelVoucher {
   @@index([checkIn])
   @@index([checkOut])
   @@index([createdAt])
-
 }
 
 /* ================= DRIVER ================= */
