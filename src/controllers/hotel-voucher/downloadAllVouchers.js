@@ -26,6 +26,7 @@ export const downloadAllVouchers = async (req, res, next) => {
           status: "None",
         },
       },
+
       orderBy: [
         {
           checkIn: "asc",
@@ -47,28 +48,50 @@ export const downloadAllVouchers = async (req, res, next) => {
     }
 
     // ======================================================
+    // 🔥 CLIENT NAME
+    // ======================================================
+    const clientName =
+      vouchers[0]?.clientName?.trim() || "Client";
+
+    // ======================================================
+    // 🔥 CREATE SAFE FILE NAME
+    // ======================================================
+    const safeClientName = clientName
+      .replace(/[^a-zA-Z0-9\s_-]/g, "")
+      .replace(/\s+/g, "_")
+      .replace(/_+/g, "_")
+      .trim();
+
+    const fileName =
+      `${safeClientName}_Hotel_Voucher.pdf`;
+
+    // ======================================================
     // 🔥 GENERATE HTML
     // ======================================================
-    const html = hotelVoucherTemplate(vouchers);
+    const html =
+      hotelVoucherTemplate(vouchers);
 
     // ======================================================
     // 🔥 LAUNCH BROWSER
     // ======================================================
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-      ],
-    });
+    const browser =
+      await puppeteer.launch({
+        headless: true,
+
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+        ],
+      });
 
     // ======================================================
     // 🔥 CREATE PAGE
     // ======================================================
-    const page = await browser.newPage();
+    const page =
+      await browser.newPage();
 
     // ======================================================
-    // 🔥 TIMEOUT FIX
+    // 🔥 TIMEOUT
     // ======================================================
     page.setDefaultNavigationTimeout(0);
 
@@ -82,18 +105,20 @@ export const downloadAllVouchers = async (req, res, next) => {
     // ======================================================
     // 🔥 GENERATE PDF
     // ======================================================
-    const pdfBuffer = await page.pdf({
-      format: "A4",
-      landscape: true,
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: {
-        top: "10px",
-        right: "20px",
-        bottom: "80px",
-        left: "40px",
-      },
-    });
+    const pdfBuffer =
+      await page.pdf({
+        format: "A4",
+        landscape: true,
+        printBackground: true,
+        preferCSSPageSize: true,
+
+        margin: {
+          top: "10px",
+          right: "20px",
+          bottom: "80px",
+          left: "40px",
+        },
+      });
 
     // ======================================================
     // 🔥 CLOSE BROWSER
@@ -104,8 +129,15 @@ export const downloadAllVouchers = async (req, res, next) => {
     // 🔥 RESPONSE HEADERS
     // ======================================================
     res.set({
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename=hotel-vouchers-${tourId}.pdf`,
+      "Content-Type":
+        "application/pdf",
+
+      "Content-Disposition":
+        `attachment; filename="${fileName}"`,
+
+      // 🔥 Important if frontend reads this header
+      "Access-Control-Expose-Headers":
+        "Content-Disposition",
     });
 
     // ======================================================
@@ -114,7 +146,12 @@ export const downloadAllVouchers = async (req, res, next) => {
     return res.send(pdfBuffer);
 
   } catch (error) {
-    console.log(error);
+
+    console.log(
+      "Download Hotel Voucher Error:",
+      error
+    );
+
     next(error);
   }
 };
